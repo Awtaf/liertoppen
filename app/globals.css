@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+/*
+  Østfold Bud Service AS — design tokens.
+  Colors are sourced directly from the company's existing visual identity brief.
+  Do not introduce new brand colors without approval.
+*/
+@theme {
+  --color-navy: #152239;
+  --color-navy-dark: #0d1626;
+  --color-green: #20d66b;
+  --color-slate: #5e6d82;
+  --color-bg-light: #f6f8fa;
+  --color-border-light: #e3e8ef;
+
+  --font-sans: var(--font-plus-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  --animate-fade-in: fade-in 0.6s ease-out both;
+  --animate-slide-in: slide-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes slide-in {
+    from {
+      opacity: 0;
+      transform: translateX(-1.25rem);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: #ffffff;
+  color: var(--color-navy);
+}
+
+::selection {
+  background: var(--color-green);
+  color: var(--color-navy);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-green);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
