@@ -53,7 +53,7 @@ export async function POST(request: Request) {
   //   import { Resend } from "resend";
   //   const resend = new Resend(process.env.RESEND_API_KEY);
   //   await resend.emails.send({
-  //     from: "Østfold Bud Service AS <post@ostbud.no>",
+  //     from: "Østfold Bud Service AS <post@ostfoldbud.no>",
   //     to: companyInfo.email,
   //     replyTo: data.email,
   //     subject: `Ny henvendelse fra ${data.name}`,

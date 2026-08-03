@@ -65,10 +65,10 @@ strukturert data osv.):
 export const companyInfo = {
   name: "Østfold Bud Service AS",
   shortName: "Østfold Bud Service",
-  domain: "ostbud.no",
+  domain: "ostfoldbud.no",
   phone: "[TELEFONNUMMER]",
   phoneHref: "tel:+47XXXXXXXX",
-  email: "post@ostbud.no",
+  email: "post@ostfoldbud.no",
   organizationNumber: "[ORGANISASJONSNUMMER]",
   address: "[ADRESSE]",
   openingHours: "Etter avtale",
@@ -134,7 +134,7 @@ import { Resend } from "resend";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 await resend.emails.send({
-  from: "Østfold Bud Service AS <post@ostbud.no>",
+  from: "Østfold Bud Service AS <post@ostfoldbud.no>",
   to: companyInfo.email,
   replyTo: data.email,
   subject: `Ny henvendelse fra ${data.name}`,
@@ -165,7 +165,7 @@ RESEND_API_KEY=din_nøkkel_her
    konfigurasjon er nødvendig.
 3. Legg inn eventuelle miljøvariabler (f.eks. `RESEND_API_KEY`) under
    prosjektets **Settings → Environment Variables**.
-4. Koble domenet `ostbud.no` til Vercel-prosjektet under
+4. Koble domenet `ostfoldbud.no` til Vercel-prosjektet under
    **Settings → Domains**.
 5. Deploy.
 
@@ -173,7 +173,7 @@ RESEND_API_KEY=din_nøkkel_her
 
 - [ ] Legg inn riktig telefonnummer i `config/company.ts`
 - [ ] Legg inn riktig e-postadresse i `config/company.ts`
-- [ ] Bekreft at `post@ostbud.no` er riktig e-postadresse (eller bytt den)
+- [ ] Bekreft at `post@ostfoldbud.no` er riktig e-postadresse (eller bytt den)
 - [ ] Legg inn organisasjonsnummer i `config/company.ts`
 - [ ] Legg inn selskapets adresse i `config/company.ts`
 - [ ] Last opp ekte bilder av Maxus e-Deliver (`public/images/fleet/`)
@@ -183,7 +183,7 @@ RESEND_API_KEY=din_nøkkel_her
 - [ ] Koble kontaktskjemaet til en e-posttjeneste (Resend/SendGrid/Nodemailer)
 - [ ] Legg inn nødvendige miljøvariabler (f.eks. `RESEND_API_KEY`) i `.env.local` og i Vercel
 - [ ] Kontroller favicon/Open Graph-bilde når ekte logo er på plass
-- [ ] Kontroller at domenet ostbud.no peker til prosjektet
+- [ ] Kontroller at domenet ostfoldbud.no peker til prosjektet
 - [ ] Test nettsiden på mobil, nettbrett og PC
 - [ ] Test kontaktskjemaet (validering, feilmeldinger og innsending)
 - [ ] Kjør `npm run lint`
