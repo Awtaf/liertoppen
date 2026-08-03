@@ -5,18 +5,18 @@
  *
  * PLACEHOLDER VALUES — must be confirmed and replaced before launch:
  * - phone
- * - email (post@ostbud.no is a suggested address and must be confirmed)
+ * - email (post@ostfoldbud.no is a suggested address and must be confirmed)
  * - organizationNumber
  * - address
  */
 export const companyInfo = {
   name: "Østfold Bud Service AS",
   shortName: "Østfold Bud Service",
-  domain: "ostbud.no",
-  url: "https://ostbud.no",
+  domain: "ostfoldbud.no",
+  url: "https://ostfoldbud.no",
   phone: "[TELEFONNUMMER]",
   phoneHref: "tel:+47XXXXXXXX",
-  email: "post@ostbud.no",
+  email: "post@ostfoldbud.no",
   organizationNumber: "[ORGANISASJONSNUMMER]",
   address: "[ADRESSE]",
   postalArea: "Østfold",
