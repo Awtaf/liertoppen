@@ -14,8 +14,8 @@ export function CoverageArea() {
               <SectionHeading
                 id="omrade-heading"
                 eyebrow="Dekningsområde"
-                title="Vi tar oppdrag på Østlandet og videre"
-                description={`Vi har base i ${companyInfo.postalArea} og kan håndtere transportoppdrag i blant annet ${companyInfo.serviceAreas.join(", ")} og andre områder etter avtale.`}
+                title="Vi tar oppdrag i store deler av Norge"
+                description={`Vi har base i ${companyInfo.postalArea} og kan håndtere transportoppdrag i blant annet ${companyInfo.serviceAreas.join(", ")} etter avtale. Nord-Norge dekker vi foreløpig ikke.`}
               />
             </MotionWrapper>
           </div>
