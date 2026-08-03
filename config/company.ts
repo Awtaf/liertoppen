@@ -21,7 +21,7 @@ export const companyInfo = {
   address: "Drammen–Spydeberg",
   postalArea: "Østfold",
   openingHours: "Etter avtale",
-  serviceAreas: ["Østfold", "Oslo", "Akershus", "Buskerud"],
+  serviceAreas: ["Østlandet", "Sørlandet", "Vestlandet", "Trøndelag"],
 } as const;
 
 export const partners = [
