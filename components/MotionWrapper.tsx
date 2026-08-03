@@ -1,7 +1,5 @@
-"use client";
-
-import type { ReactNode } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import type { CSSProperties, ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 type MotionWrapperProps = {
   children: ReactNode;
@@ -10,25 +8,25 @@ type MotionWrapperProps = {
   direction?: "up" | "left";
 };
 
+/**
+ * Reveals content with a short, subtle entrance animation using plain CSS
+ * (see the fade-up/fade-left keyframes in globals.css) instead of a
+ * JS-driven, scroll-triggered library. A JS/hydration hiccup can never
+ * leave content stuck invisible this way — the animation runs on paint
+ * and always finishes, and prefers-reduced-motion is honored globally.
+ */
 export function MotionWrapper({
   children,
   className,
   delay = 0,
   direction = "up",
 }: MotionWrapperProps) {
-  const shouldReduceMotion = useReducedMotion();
-
-  const offset = direction === "up" ? { y: 20 } : { x: -20 };
+  const animationClass = direction === "left" ? "animate-fade-left" : "animate-fade-up";
+  const style: CSSProperties | undefined = delay ? { animationDelay: `${delay}s` } : undefined;
 
   return (
-    <motion.div
-      className={className}
-      initial={shouldReduceMotion ? undefined : { opacity: 0, ...offset }}
-      whileInView={shouldReduceMotion ? undefined : { opacity: 1, x: 0, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.6, delay, ease: [0.16, 1, 0.3, 1] }}
-    >
+    <div className={cn(animationClass, className)} style={style}>
       {children}
-    </motion.div>
+    </div>
   );
 }
