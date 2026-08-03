@@ -4,21 +4,21 @@
  * so the entire site only needs to be updated in one place.
  *
  * PLACEHOLDER VALUES — must be confirmed and replaced before launch:
- * - phone
  * - email (post@ostfoldbud.no is a suggested address and must be confirmed)
- * - organizationNumber
- * - address
+ * - address (currently the operating area, not a street address — replace
+ *   with a real postal address if/when the company has one, for accurate
+ *   structured data)
  */
 export const companyInfo = {
   name: "Østfold Bud Service AS",
   shortName: "Østfold Bud Service",
   domain: "ostfoldbud.no",
   url: "https://ostfoldbud.no",
-  phone: "[TELEFONNUMMER]",
-  phoneHref: "tel:+47XXXXXXXX",
+  phone: "930 00 401",
+  phoneHref: "tel:+4793000401",
   email: "post@ostfoldbud.no",
-  organizationNumber: "[ORGANISASJONSNUMMER]",
-  address: "[ADRESSE]",
+  organizationNumber: "937 005 857",
+  address: "Drammen–Spydeberg",
   postalArea: "Østfold",
   openingHours: "Etter avtale",
   serviceAreas: ["Østfold", "Oslo", "Akershus", "Buskerud"],
