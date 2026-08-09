@@ -69,6 +69,30 @@ export function hasErrors(errors: ContactFormErrors): boolean {
   return Object.keys(errors).length > 0;
 }
 
+export function buildContactMailto(
+  toEmail: string,
+  data: ContactFormData
+): string {
+  const subject = data.company
+    ? `Ny henvendelse fra ${data.name} (${data.company})`
+    : `Ny henvendelse fra ${data.name}`;
+
+  const lines = [
+    `Navn: ${data.name}`,
+    data.company && `Bedrift: ${data.company}`,
+    data.phone && `Telefonnummer: ${data.phone}`,
+    `E-post: ${data.email}`,
+    `Type oppdrag: ${data.jobType}`,
+    data.area && `Område: ${data.area}`,
+    data.desiredStart && `Ønsket oppstart: ${data.desiredStart}`,
+    "",
+    "Melding:",
+    data.message,
+  ].filter((line): line is string => Boolean(line));
+
+  return `mailto:${toEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`;
+}
+
 export const initialContactFormData: ContactFormData = {
   name: "",
   company: "",

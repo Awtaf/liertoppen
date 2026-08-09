@@ -1,13 +1,15 @@
 "use client";
 
 import { useId, useState, type FormEvent } from "react";
-import { Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, Mail } from "lucide-react";
 import { Button } from "./Button";
+import { companyInfo } from "@/config/company";
 import {
   initialContactFormData,
   jobTypeOptions,
   validateContactForm,
   hasErrors,
+  buildContactMailto,
   type ContactFormData,
   type ContactFormErrors,
 } from "@/lib/contact";
@@ -42,23 +44,25 @@ export function ContactForm() {
 
     setStatus("submitting");
 
-    try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+    // Best-effort server-side log, so there is a record even if the visitor
+    // never completes the email. Does not block the mailto flow below —
+    // see app/api/contact/route.ts for why this alone isn't a real "sent".
+    fetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }).catch(() => {});
 
-      if (!response.ok) {
-        throw new Error("Innsending feilet");
-      }
+    // Open the visitor's own email app with the message pre-filled to
+    // companyInfo.email. This is the actual delivery mechanism until a
+    // server-side email provider (Resend/SMTP) is connected — see README.
+    window.location.href = buildContactMailto(companyInfo.email, data);
 
+    window.setTimeout(() => {
       setStatus("success");
       setData(initialContactFormData);
       setErrors({});
-    } catch {
-      setStatus("error");
-    }
+    }, 400);
   }
 
   if (status === "success") {
@@ -69,11 +73,15 @@ export function ContactForm() {
       >
         <CheckCircle2 aria-hidden className="h-12 w-12 text-green" />
         <div>
-          <p className="text-lg font-bold text-navy">
-            Takk for henvendelsen.
+          <p className="text-lg font-bold text-navy">Nesten i mål.</p>
+          <p className="mt-1 max-w-sm text-sm text-slate">
+            E-postprogrammet ditt skal nå ha åpnet seg med henvendelsen
+            ferdig utfylt til {companyInfo.email}. Trykk Send der for å
+            fullføre.
           </p>
-          <p className="mt-1 text-sm text-slate">
-            Vi tar kontakt så snart som mulig.
+          <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-slate">
+            <Mail aria-hidden className="h-3.5 w-3.5" />
+            Skjedde ikke det? Send oss en e-post direkte på {companyInfo.email}.
           </p>
         </div>
         <Button

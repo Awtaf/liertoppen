@@ -43,11 +43,16 @@ export async function POST(request: Request) {
     );
   }
 
-  // The submission is validated at this point. It is currently only logged
-  // server-side — no email provider is connected yet.
+  // The submission is validated at this point and logged here as a
+  // best-effort backup record. The actual delivery to the visitor right now
+  // happens client-side via a mailto: link (see ContactForm.tsx /
+  // buildContactMailto in lib/contact.ts) — no email provider is connected
+  // to this route yet, so nothing below sends anything on its own.
   //
-  // TODO: Connect an email provider before launch. Do not report success to
-  // the user unless the message has actually been delivered somewhere.
+  // TODO: Connect a real email provider here for fully automatic delivery
+  // that doesn't depend on the visitor's own email client. Do not report
+  // success to the user from this route alone unless the message has
+  // actually been delivered somewhere.
   // Example using Resend (https://resend.com):
   //
   //   import { Resend } from "resend";
