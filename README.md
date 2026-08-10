@@ -119,43 +119,40 @@ Slik legger du inn ekte bilder:
 
 ## Koble kontaktskjemaet til e-post
 
-Kontaktskjemaet (`components/ContactForm.tsx`) sender i dag data til
-`app/api/contact/route.ts`. Denne API-routen validerer innsendingen og
-**logger den til serverkonsollen**, men sender foreløpig ingen e-post —
-det er tydelig markert med en `TODO`-kommentar i filen.
+Kontaktskjemaet (`components/ContactForm.tsx`) sender data til
+`app/api/contact/route.ts`, som validerer innsendingen og prøver å sende
+den videre på e-post via SMTP (med [Nodemailer](https://nodemailer.com)) —
+koden er allerede skrevet og klar i `app/api/contact/route.ts`. Den
+trenger bare fire miljøvariabler for å bli aktiv:
 
-For å koble til en e-posttjeneste, åpne `app/api/contact/route.ts` og legg
-til sending der `TODO`-kommentaren er. Eksempel med
-[Resend](https://resend.com):
-
-```ts
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-await resend.emails.send({
-  from: "Østfold Bud Service AS <post@ostfoldbud.no>",
-  to: companyInfo.email,
-  replyTo: data.email,
-  subject: `Ny henvendelse fra ${data.name}`,
-  text: `Navn: ${data.name}\nBedrift: ${data.company}\n...`,
-});
+```
+SMTP_HOST=send.eksempel.no
+SMTP_PORT=587
+SMTP_USER=post@ostfoldbud.no
+SMTP_PASSWORD=passordet_til_denne_e-postkontoen
 ```
 
-Samme mønster fungerer med SendGrid eller Nodemailer — bygg meldingen fra
-`data`-objektet og send den i denne funksjonen. Oppdater kun
-suksessmeldingen i `ContactForm.tsx` dersom du er sikker på at e-posten
-faktisk blir sendt.
+Disse fire finner du i e-post-innstillingene hos e-postleverandøren
+(f.eks. Webhuset) — se etter "SMTP" eller "utgående server" for
+mailboksen `post@ostfoldbud.no`.
+
+**Så lenge disse fire ikke er satt**, sender ikke API-routen noe selv.
+Kontaktskjemaet faller da automatisk tilbake til å åpne den besøkendes
+eget e-postprogram med meldingen ferdig utfylt (en `mailto:`-lenke, se
+`buildContactMailto` i `lib/contact.ts`) — de må selv trykke Send. Så
+snart alle fire miljøvariabler er satt (i `.env.local` lokalt, og i
+Vercel for den live siden), sender skjemaet automatisk uten at noen
+trenger å gjøre noe mer.
+
+Foretrekker du en tjeneste som [Resend](https://resend.com) eller
+SendGrid i stedet for SMTP? Bytt ut `getTransporter`/`sendMail`-kallet i
+`app/api/contact/route.ts` med deres SDK — samme prinsipp, bare en annen
+sendemetode.
 
 ### Miljøvariabler
 
 Opprett en `.env.local`-fil i prosjektroten (den er allerede lagt til i
-`.gitignore` og skal aldri commit'es) for API-nøkler til e-posttjenesten,
-f.eks.:
-
-```
-RESEND_API_KEY=din_nøkkel_her
-```
+`.gitignore` og skal aldri commit'es) med de fire SMTP-variablene over.
 
 ## Publisere på Vercel
 
@@ -163,8 +160,9 @@ RESEND_API_KEY=din_nøkkel_her
 2. Gå til [vercel.com/new](https://vercel.com/new) og importer repoet.
    Next.js-prosjekter gjenkjennes automatisk — ingen spesiell
    konfigurasjon er nødvendig.
-3. Legg inn eventuelle miljøvariabler (f.eks. `RESEND_API_KEY`) under
-   prosjektets **Settings → Environment Variables**.
+3. Legg inn miljøvariablene (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
+   `SMTP_PASSWORD`) under prosjektets **Settings → Environment
+   Variables**.
 4. Koble domenet `ostfoldbud.no` til Vercel-prosjektet under
    **Settings → Domains**.
 5. Deploy.
@@ -180,8 +178,8 @@ RESEND_API_KEY=din_nøkkel_her
 - [ ] Last opp ekte bilder av Mercedes-Benz Sprinter (`public/images/fleet/`)
 - [ ] Legg inn de ekte logofilene og bytt ut plassholder-logoen (se over)
 - [ ] Få personvernteksten (`/personvern`) kontrollert juridisk
-- [ ] Koble kontaktskjemaet til en e-posttjeneste (Resend/SendGrid/Nodemailer)
-- [ ] Legg inn nødvendige miljøvariabler (f.eks. `RESEND_API_KEY`) i `.env.local` og i Vercel
+- [ ] Hent SMTP-innstillinger for `post@ostfoldbud.no` fra e-postleverandøren
+- [ ] Legg inn `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD` i `.env.local` og i Vercel
 - [ ] Kontroller favicon/Open Graph-bilde når ekte logo er på plass
 - [ ] Kontroller at domenet ostfoldbud.no peker til prosjektet
 - [ ] Test nettsiden på mobil, nettbrett og PC

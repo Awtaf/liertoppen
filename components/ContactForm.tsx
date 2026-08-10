@@ -15,6 +15,7 @@ import {
 } from "@/lib/contact";
 
 type Status = "idle" | "submitting" | "success" | "error";
+type DeliveryMethod = "email" | "mailto";
 
 const fieldClasses =
   "w-full rounded-lg border border-border-light bg-white px-4 py-2.5 text-sm text-navy placeholder:text-slate/60 transition-colors focus:border-green focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-green";
@@ -26,6 +27,7 @@ export function ContactForm() {
   const [data, setData] = useState<ContactFormData>(initialContactFormData);
   const [errors, setErrors] = useState<ContactFormErrors>({});
   const [status, setStatus] = useState<Status>("idle");
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("mailto");
   const formId = useId();
 
   function update<K extends keyof ContactFormData>(key: K, value: ContactFormData[K]) {
@@ -44,18 +46,33 @@ export function ContactForm() {
 
     setStatus("submitting");
 
-    // Best-effort server-side log, so there is a record even if the visitor
-    // never completes the email. Does not block the mailto flow below —
-    // see app/api/contact/route.ts for why this alone isn't a real "sent".
-    fetch("/api/contact", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
-    }).catch(() => {});
+    // The API route sends the email itself once SMTP credentials are
+    // configured (see app/api/contact/route.ts) and reports back whether
+    // it actually succeeded. Until then — or if sending fails for any
+    // reason — fall back to opening a mailto: link so the visitor can
+    // still send it themselves.
+    let sent = false;
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const result = await response.json().catch(() => null);
+      sent = Boolean(result?.sent);
+    } catch {
+      sent = false;
+    }
 
-    // Open the visitor's own email app with the message pre-filled to
-    // companyInfo.email. This is the actual delivery mechanism until a
-    // server-side email provider (Resend/SMTP) is connected — see README.
+    if (sent) {
+      setDeliveryMethod("email");
+      setStatus("success");
+      setData(initialContactFormData);
+      setErrors({});
+      return;
+    }
+
+    setDeliveryMethod("mailto");
     window.location.href = buildContactMailto(companyInfo.email, data);
 
     window.setTimeout(() => {
@@ -72,18 +89,29 @@ export function ContactForm() {
         className="flex flex-col items-center gap-4 rounded-2xl border border-green/30 bg-green/5 px-8 py-14 text-center"
       >
         <CheckCircle2 aria-hidden className="h-12 w-12 text-green" />
-        <div>
-          <p className="text-lg font-bold text-navy">Nesten i mål.</p>
-          <p className="mt-1 max-w-sm text-sm text-slate">
-            E-postprogrammet ditt skal nå ha åpnet seg med henvendelsen
-            ferdig utfylt til {companyInfo.email}. Trykk Send der for å
-            fullføre.
-          </p>
-          <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-slate">
-            <Mail aria-hidden className="h-3.5 w-3.5" />
-            Skjedde ikke det? Send oss en e-post direkte på {companyInfo.email}.
-          </p>
-        </div>
+        {deliveryMethod === "email" ? (
+          <div>
+            <p className="text-lg font-bold text-navy">
+              Takk for henvendelsen.
+            </p>
+            <p className="mt-1 text-sm text-slate">
+              Vi tar kontakt så snart som mulig.
+            </p>
+          </div>
+        ) : (
+          <div>
+            <p className="text-lg font-bold text-navy">Nesten i mål.</p>
+            <p className="mt-1 max-w-sm text-sm text-slate">
+              E-postprogrammet ditt skal nå ha åpnet seg med henvendelsen
+              ferdig utfylt til {companyInfo.email}. Trykk Send der for å
+              fullføre.
+            </p>
+            <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-slate">
+              <Mail aria-hidden className="h-3.5 w-3.5" />
+              Skjedde ikke det? Send oss en e-post direkte på {companyInfo.email}.
+            </p>
+          </div>
+        )}
         <Button
           variant="secondary-dark"
           showArrow={false}

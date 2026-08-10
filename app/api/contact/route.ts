@@ -1,9 +1,47 @@
 import { NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 import {
   validateContactForm,
   hasErrors,
+  buildContactSubject,
+  buildContactMessageLines,
   type ContactFormData,
 } from "@/lib/contact";
+import { companyInfo } from "@/config/company";
+
+/**
+ * Server-side email delivery via SMTP (works with the company's existing
+ * mailbox — e.g. Webhuset — or any other SMTP provider). Configured with
+ * environment variables so no credentials are hardcoded:
+ *
+ *   SMTP_HOST     e.g. send.webhuset.no
+ *   SMTP_PORT     e.g. 587
+ *   SMTP_USER     the mailbox address, e.g. post@ostfoldbud.no
+ *   SMTP_PASSWORD the mailbox password
+ *
+ * Until all four are set (e.g. in Vercel → Settings → Environment
+ * Variables), this route cannot send anything on its own — it only logs
+ * the submission, and ContactForm.tsx falls back to opening a mailto:
+ * link so the visitor can send it manually. Once the variables are set,
+ * delivery becomes fully automatic and no code changes are needed.
+ */
+function getTransporter() {
+  const host = process.env.SMTP_HOST;
+  const port = process.env.SMTP_PORT;
+  const user = process.env.SMTP_USER;
+  const password = process.env.SMTP_PASSWORD;
+
+  if (!host || !port || !user || !password) {
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    host,
+    port: Number(port),
+    secure: Number(port) === 465,
+    auth: { user, pass: password },
+  });
+}
 
 export async function POST(request: Request) {
   let body: Partial<ContactFormData>;
@@ -32,42 +70,17 @@ export async function POST(request: Request) {
 
   // Honeypot: real users never fill this hidden field in.
   if (data.website.trim().length > 0) {
-    return NextResponse.json({ message: "Mottatt." }, { status: 200 });
+    return NextResponse.json({ message: "Mottatt.", sent: false }, { status: 200 });
   }
 
   const errors = validateContactForm(data);
   if (hasErrors(errors)) {
     return NextResponse.json(
-      { message: "Skjemaet inneholder feil.", errors },
+      { message: "Skjemaet inneholder feil.", errors, sent: false },
       { status: 400 }
     );
   }
 
-  // The submission is validated at this point and logged here as a
-  // best-effort backup record. The actual delivery to the visitor right now
-  // happens client-side via a mailto: link (see ContactForm.tsx /
-  // buildContactMailto in lib/contact.ts) — no email provider is connected
-  // to this route yet, so nothing below sends anything on its own.
-  //
-  // TODO: Connect a real email provider here for fully automatic delivery
-  // that doesn't depend on the visitor's own email client. Do not report
-  // success to the user from this route alone unless the message has
-  // actually been delivered somewhere.
-  // Example using Resend (https://resend.com):
-  //
-  //   import { Resend } from "resend";
-  //   const resend = new Resend(process.env.RESEND_API_KEY);
-  //   await resend.emails.send({
-  //     from: "Østfold Bud Service AS <post@ostfoldbud.no>",
-  //     to: companyInfo.email,
-  //     replyTo: data.email,
-  //     subject: `Ny henvendelse fra ${data.name}`,
-  //     text: `...`,
-  //   });
-  //
-  // Nodemailer and SendGrid work the same way: build the message from
-  // `data` below and send it here. Store provider credentials as
-  // environment variables (see README.md), never hardcoded.
   console.info("Ny kontaktforespørsel mottatt:", {
     name: data.name,
     company: data.company,
@@ -79,8 +92,33 @@ export async function POST(request: Request) {
     message: data.message,
   });
 
-  return NextResponse.json(
-    { message: "Henvendelsen er mottatt." },
-    { status: 200 }
-  );
+  const transporter = getTransporter();
+  if (!transporter) {
+    // No email provider configured yet — the client falls back to mailto.
+    return NextResponse.json(
+      { message: "Henvendelsen er mottatt, men ikke sendt automatisk.", sent: false },
+      { status: 200 }
+    );
+  }
+
+  try {
+    await transporter.sendMail({
+      from: `"${companyInfo.name}" <${process.env.SMTP_USER}>`,
+      to: companyInfo.email,
+      replyTo: data.email,
+      subject: buildContactSubject(data),
+      text: buildContactMessageLines(data).join("\n"),
+    });
+
+    return NextResponse.json(
+      { message: "Henvendelsen er sendt.", sent: true },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Kunne ikke sende kontaktskjema-e-post:", error);
+    return NextResponse.json(
+      { message: "Henvendelsen er mottatt, men sending feilet.", sent: false },
+      { status: 200 }
+    );
+  }
 }
