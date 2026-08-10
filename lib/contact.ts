@@ -69,15 +69,14 @@ export function hasErrors(errors: ContactFormErrors): boolean {
   return Object.keys(errors).length > 0;
 }
 
-export function buildContactMailto(
-  toEmail: string,
-  data: ContactFormData
-): string {
-  const subject = data.company
+export function buildContactSubject(data: ContactFormData): string {
+  return data.company
     ? `Ny henvendelse fra ${data.name} (${data.company})`
     : `Ny henvendelse fra ${data.name}`;
+}
 
-  const lines = [
+export function buildContactMessageLines(data: ContactFormData): string[] {
+  return [
     `Navn: ${data.name}`,
     data.company && `Bedrift: ${data.company}`,
     data.phone && `Telefonnummer: ${data.phone}`,
@@ -89,8 +88,15 @@ export function buildContactMailto(
     "Melding:",
     data.message,
   ].filter((line): line is string => Boolean(line));
+}
 
-  return `mailto:${toEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join("\n"))}`;
+export function buildContactMailto(
+  toEmail: string,
+  data: ContactFormData
+): string {
+  const subject = buildContactSubject(data);
+  const body = buildContactMessageLines(data).join("\n");
+  return `mailto:${toEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
 export const initialContactFormData: ContactFormData = {
