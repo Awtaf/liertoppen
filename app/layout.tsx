@@ -1,9 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
-import { BackToTop } from "@/components/BackToTop";
 import { siteConfig } from "@/config/site";
 import { companyInfo } from "@/config/company";
 
@@ -73,6 +70,14 @@ const jsonLd = {
   },
 };
 
+/**
+ * Minimal root layout — html/body shell, fonts, global metadata and
+ * structured data only. Page chrome (header/footer) is intentionally NOT
+ * here: it lives in app/(marketing)/layout.tsx for the public site, so
+ * that app/admin/layout.tsx (a separate internal tool, not a marketing
+ * page) doesn't inherit it. Having both layouts render a header caused a
+ * real bug where the marketing header rendered on top of the admin one.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -80,7 +85,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="no" className={`${plusJakarta.variable} antialiased`}>
-      <body className="flex min-h-screen flex-col bg-white text-navy">
+      <body className="bg-white text-navy">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -91,12 +96,7 @@ export default function RootLayout({
         >
           Hopp til hovedinnhold
         </a>
-        <Header />
-        <main id="main-content" className="flex-1">
-          {children}
-        </main>
-        <Footer />
-        <BackToTop />
+        {children}
       </body>
     </html>
   );

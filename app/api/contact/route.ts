@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
 import {
   validateContactForm,
   hasErrors,
@@ -7,7 +6,7 @@ import {
   buildContactMessageLines,
   type ContactFormData,
 } from "@/lib/contact";
-import { companyInfo } from "@/config/company";
+import { sendAdminNotification } from "@/lib/mailer";
 
 /**
  * Server-side email delivery via SMTP (works with the company's existing
@@ -24,25 +23,9 @@ import { companyInfo } from "@/config/company";
  * the submission, and ContactForm.tsx falls back to opening a mailto:
  * link so the visitor can send it manually. Once the variables are set,
  * delivery becomes fully automatic and no code changes are needed.
+ * See lib/mailer.ts for the shared transporter logic (also used by the
+ * /tilbud lead notifications).
  */
-function getTransporter() {
-  const host = process.env.SMTP_HOST;
-  const port = process.env.SMTP_PORT;
-  const user = process.env.SMTP_USER;
-  const password = process.env.SMTP_PASSWORD;
-
-  if (!host || !port || !user || !password) {
-    return null;
-  }
-
-  return nodemailer.createTransport({
-    host,
-    port: Number(port),
-    secure: Number(port) === 465,
-    auth: { user, pass: password },
-  });
-}
-
 export async function POST(request: Request) {
   let body: Partial<ContactFormData>;
 
@@ -92,33 +75,19 @@ export async function POST(request: Request) {
     message: data.message,
   });
 
-  const transporter = getTransporter();
-  if (!transporter) {
-    // No email provider configured yet — the client falls back to mailto.
-    return NextResponse.json(
-      { message: "Henvendelsen er mottatt, men ikke sendt automatisk.", sent: false },
-      { status: 200 }
-    );
-  }
+  const sent = await sendAdminNotification({
+    subject: buildContactSubject(data),
+    text: buildContactMessageLines(data).join("\n"),
+    replyTo: data.email,
+  });
 
-  try {
-    await transporter.sendMail({
-      from: `"${companyInfo.name}" <${process.env.SMTP_USER}>`,
-      to: companyInfo.email,
-      replyTo: data.email,
-      subject: buildContactSubject(data),
-      text: buildContactMessageLines(data).join("\n"),
-    });
-
-    return NextResponse.json(
-      { message: "Henvendelsen er sendt.", sent: true },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("Kunne ikke sende kontaktskjema-e-post:", error);
-    return NextResponse.json(
-      { message: "Henvendelsen er mottatt, men sending feilet.", sent: false },
-      { status: 200 }
-    );
-  }
+  return NextResponse.json(
+    {
+      message: sent
+        ? "Henvendelsen er sendt."
+        : "Henvendelsen er mottatt, men ikke sendt automatisk.",
+      sent,
+    },
+    { status: 200 }
+  );
 }
