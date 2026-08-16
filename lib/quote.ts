@@ -1,11 +1,25 @@
-import type { ServiceType, PriceBreakdown } from "./pricing";
+import type { PrisResultat } from "./pricing";
 import type { GeocodedAddress } from "./mapbox";
+
+/**
+ * "standard" | "ekspress" is the form/database-facing representation
+ * (matches the `service_type` check constraint in Supabase). The pricing
+ * engine (lib/pricing.ts) takes a plain `ekspress: boolean` instead — the
+ * API route converts between the two at the boundary.
+ */
+export type ServiceType = "standard" | "ekspress";
 
 export type QuoteResult = {
   pickup: GeocodedAddress;
   delivery: GeocodedAddress;
   distanceKm: number;
-  breakdown: PriceBreakdown;
+  /**
+   * Full cost-basis pricing result, including internal cost/margin
+   * breakdown. This must never be rendered on the public /tilbud pages —
+   * only the total (`price.pris`) is customer-facing. See
+   * components/QuoteForm.tsx and app/admin/leads/[id]/page.tsx.
+   */
+  price: PrisResultat;
 };
 
 export type QuoteFormData = {
