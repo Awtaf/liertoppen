@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState, type FormEvent } from "react";
+import Link from "next/link";
 import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "./Button";
 import {
@@ -29,6 +30,7 @@ export function QuoteForm() {
   const [calcError, setCalcError] = useState<string | null>(null);
   const [quote, setQuote] = useState<QuoteResult | null>(null);
   const [leadStatus, setLeadStatus] = useState<LeadStatus>("idle");
+  const [leadId, setLeadId] = useState<string | null>(null);
   const formId = useId();
 
   function update<K extends keyof QuoteFormData>(key: K, value: QuoteFormData[K]) {
@@ -88,12 +90,15 @@ export function QuoteForm() {
         body: JSON.stringify({ ...data, quote }),
       });
 
+      const result = await response.json().catch(() => null);
+
       if (!response.ok) {
         setLeadStatus("idle");
         setCalcError("Kunne ikke sende forespørselen. Prøv igjen.");
         return;
       }
 
+      setLeadId(result?.leadId ?? null);
       setLeadStatus("submitted");
     } catch {
       setLeadStatus("idle");
@@ -112,6 +117,14 @@ export function QuoteForm() {
         <p className="max-w-sm text-sm text-slate">
           Vi tar kontakt for å bekrefte henting og endelig pris.
         </p>
+        {leadId && (
+          <Link
+            href={`/tilbud/status/${leadId}`}
+            className="mt-1 text-sm font-semibold text-green hover:underline"
+          >
+            Sjekk status på forespørselen her →
+          </Link>
+        )}
       </div>
     );
   }

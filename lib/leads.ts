@@ -42,3 +42,25 @@ export const STATUS_STYLES: Record<LeadStatus, string> = {
   Bekreftet: "bg-green/15 text-green-800",
   Avvist: "bg-red-100 text-red-700",
 };
+
+/** Customer-facing description shown on the public /tilbud/status/[id] page. */
+export const STATUS_DESCRIPTIONS: Record<LeadStatus, string> = {
+  Ny: "Vi har mottatt forespørselen din og gjennomgår den.",
+  Kontaktet: "Vi har vært i kontakt, eller prøver å nå deg, for å avtale detaljer.",
+  Bekreftet: "Henting er bekreftet. Vi kontakter deg med nærmere tidspunkt.",
+  Avvist: "Vi kan dessverre ikke ta dette oppdraget. Ta gjerne kontakt for detaljer.",
+};
+
+/** The normal, non-Avvist progression shown as steps on the status page. */
+export const STATUS_STEPS: LeadStatus[] = ["Ny", "Kontaktet", "Bekreftet"];
+
+/** Fields safe to show on the public status-lookup page — no customer PII. */
+export type PublicLeadStatus = {
+  id: string;
+  pickup_address: string;
+  delivery_address: string;
+  service_type: ServiceType;
+  price_estimate: number | null;
+  status: LeadStatus;
+  created_at: string;
+};
