@@ -137,22 +137,51 @@ export default async function LeadDetailPage({
 
         <div className="rounded-2xl border border-green/30 bg-green/5 p-6">
           <h2 className="text-sm font-bold tracking-wide text-navy uppercase">
-            Prisestimat
+            Pris til kunde
           </h2>
           <p className="mt-2 text-2xl font-bold text-navy">
             {lead.price_estimate?.toLocaleString("nb-NO")} kr
           </p>
           {lead.price_breakdown && (
-            <dl className="mt-4 space-y-1.5 border-t border-green/20 pt-4 text-sm">
-              {lead.price_breakdown.lines.map((line) => (
-                <div key={line.label} className="flex justify-between gap-4">
-                  <dt className="text-slate">{line.label}</dt>
+            <>
+              <p className="mt-3 text-sm font-medium text-navy">
+                {lead.price_breakdown.kjoretoy}
+              </p>
+              {/* Internal cost/margin breakdown — admin-only, never shown to
+                  the customer. See lib/pricing.ts and QuoteForm.tsx. */}
+              <dl className="mt-4 space-y-1.5 border-t border-green/20 pt-4 text-sm">
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate">Kjørekostnad</dt>
                   <dd className="font-medium text-navy">
-                    {line.amount.toLocaleString("nb-NO")} kr
+                    {lead.price_breakdown.breakdown.kjorekostnad.toLocaleString("nb-NO")} kr
                   </dd>
                 </div>
-              ))}
-            </dl>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate">Tidskostnad</dt>
+                  <dd className="font-medium text-navy">
+                    {lead.price_breakdown.breakdown.tidskostnad.toLocaleString("nb-NO")} kr
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate">Vekt-/volumtillegg</dt>
+                  <dd className="font-medium text-navy">
+                    {lead.price_breakdown.breakdown.vekttillegg.toLocaleString("nb-NO")} kr
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4 border-t border-green/20 pt-1.5">
+                  <dt className="text-slate">Kostnad totalt</dt>
+                  <dd className="font-medium text-navy">
+                    {lead.price_breakdown.breakdown.kostnadTotal.toLocaleString("nb-NO")} kr
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <dt className="text-slate">Margin</dt>
+                  <dd className="font-medium text-navy">
+                    {Math.round(lead.price_breakdown.breakdown.margin * 100)} %
+                  </dd>
+                </div>
+              </dl>
+            </>
           )}
         </div>
       </div>

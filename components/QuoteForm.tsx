@@ -11,8 +11,13 @@ import {
   type QuoteFormData,
   type QuoteFormErrors,
   type QuoteResult,
+  type ServiceType,
 } from "@/lib/quote";
-import type { ServiceType } from "@/lib/pricing";
+
+const VEHICLE_LABELS: Record<QuoteResult["price"]["kjoretoy"], string> = {
+  "Elektrisk (Maxus)": "Elektrisk varebil (Maxus e-Deliver)",
+  "Diesel (Sprinter)": "Varebil (Mercedes-Benz Sprinter)",
+};
 
 type CalcStatus = "idle" | "calculating" | "quoted";
 type LeadStatus = "idle" | "submitting" | "submitted";
@@ -414,17 +419,21 @@ export function QuoteForm() {
             Veiledende estimat
           </p>
           <p className="mt-1 text-3xl font-bold text-navy">
-            {quote.breakdown.total.toLocaleString("nb-NO")} kr
+            {quote.price.pris.toLocaleString("nb-NO")} kr
           </p>
           <dl className="mt-4 space-y-1.5 border-t border-green/20 pt-4">
-            {quote.breakdown.lines.map((line) => (
-              <div key={line.label} className="flex items-center justify-between text-sm">
-                <dt className="text-slate">{line.label}</dt>
-                <dd className="font-medium text-navy">
-                  {line.amount.toLocaleString("nb-NO")} kr
-                </dd>
-              </div>
-            ))}
+            <div className="flex items-center justify-between text-sm">
+              <dt className="text-slate">Avstand</dt>
+              <dd className="font-medium text-navy">
+                {quote.distanceKm.toLocaleString("nb-NO", { maximumFractionDigits: 1 })} km
+              </dd>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <dt className="text-slate">Kjøretøy</dt>
+              <dd className="font-medium text-navy">
+                {VEHICLE_LABELS[quote.price.kjoretoy]}
+              </dd>
+            </div>
           </dl>
           <p className="mt-4 text-xs text-slate">
             Dette er et veiledende estimat, ikke en bindende pris. Endelig

@@ -6,8 +6,8 @@ import {
   hasErrors,
   type QuoteFormData,
   type QuoteResult,
+  type ServiceType,
 } from "@/lib/quote";
-import type { ServiceType } from "@/lib/pricing";
 
 type LeadRequestBody = Partial<QuoteFormData> & { quote?: QuoteResult };
 
@@ -102,8 +102,8 @@ export async function POST(request: Request) {
       colli: Number(data.colli),
       service_type: data.serviceType,
       distance_km: quote.distanceKm,
-      price_estimate: quote.breakdown.total,
-      price_breakdown: quote.breakdown,
+      price_estimate: quote.price.pris,
+      price_breakdown: quote.price,
       status: "Ny",
     })
     .select("id")
@@ -117,6 +117,9 @@ export async function POST(request: Request) {
     );
   }
 
+  // Internal email to the business — safe to include the full cost/margin
+  // breakdown here (unlike the public /tilbud pages, which only ever show
+  // the final price to the customer).
   const summaryLines = [
     `Navn: ${data.customerName}`,
     `E-post: ${email}`,
@@ -126,7 +129,16 @@ export async function POST(request: Request) {
     `Avstand: ${quote.distanceKm.toFixed(1)} km`,
     `Vekt: ${data.weightKg} kg (${data.lengthCm}×${data.widthCm}×${data.heightCm} cm, ${data.colli} kolli)`,
     `Tjeneste: ${data.serviceType === "ekspress" ? "Ekspress" : "Standard"}`,
-    `Estimert pris: ${quote.breakdown.total} kr`,
+    `Kjøretøy: ${quote.price.kjoretoy}`,
+    "",
+    "Kostnadsgrunnlag (internt):",
+    `  Kjørekostnad: ${quote.price.breakdown.kjorekostnad} kr`,
+    `  Tidskostnad: ${quote.price.breakdown.tidskostnad} kr`,
+    `  Vekt-/volumtillegg: ${quote.price.breakdown.vekttillegg} kr`,
+    `  Kostnad totalt: ${quote.price.breakdown.kostnadTotal} kr`,
+    `  Margin: ${Math.round(quote.price.breakdown.margin * 100)} %`,
+    "",
+    `Pris til kunde: ${quote.price.pris} kr`,
   ];
 
   await sendAdminNotification({

@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { geocodeAddress, getDrivingDistanceKm } from "@/lib/mapbox";
-import { calculatePrice, type ServiceType } from "@/lib/pricing";
-import { validateQuoteForm, hasErrors, type QuoteFormData } from "@/lib/quote";
+import { beregnPris } from "@/lib/pricing";
+import {
+  validateQuoteForm,
+  hasErrors,
+  type QuoteFormData,
+  type ServiceType,
+} from "@/lib/quote";
 
 export async function POST(request: Request) {
   let body: Partial<QuoteFormData>;
@@ -73,19 +78,20 @@ export async function POST(request: Request) {
     );
   }
 
-  const breakdown = calculatePrice({
-    actualWeightKg: Number(data.weightKg),
-    lengthCm: Number(data.lengthCm),
-    widthCm: Number(data.widthCm),
-    heightCm: Number(data.heightCm),
-    distanceKm,
-    serviceType: data.serviceType,
+  const price = beregnPris({
+    distanseKm: distanceKm,
+    vektKg: Number(data.weightKg),
+    lengdeCm: Number(data.lengthCm),
+    breddeCm: Number(data.widthCm),
+    hoydeCm: Number(data.heightCm),
+    antallKolli: Number(data.colli),
+    ekspress: data.serviceType === "ekspress",
   });
 
   return NextResponse.json({
     pickup,
     delivery,
     distanceKm,
-    breakdown,
+    price,
   });
 }

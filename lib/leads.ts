@@ -1,4 +1,5 @@
-import type { PriceBreakdown, ServiceType } from "./pricing";
+import type { PrisResultat } from "./pricing";
+import type { ServiceType } from "./quote";
 
 export type LeadStatus = "Ny" | "Kontaktet" | "Bekreftet" | "Avvist";
 
@@ -26,7 +27,8 @@ export type Lead = {
   service_type: ServiceType;
   distance_km: number | null;
   price_estimate: number | null;
-  price_breakdown: PriceBreakdown | null;
+  /** Internal cost/margin breakdown — admin-only, see PrisResultat. */
+  price_breakdown: PrisResultat | null;
   status: LeadStatus;
   created_at: string;
   customers: {
