@@ -32,9 +32,10 @@ export const PRISCONFIG = {
   kostPerKmDiesel: 4.5, // kr/km
 
   // --- Tomkjøring hjem (bilen returnerer ofte uten last) ---
-  // 1.0 = ingen retur betales, 2.0 = full tur/retur. 1.6 = antar delvis tom retur.
-  // For dedikerte lange turer der bilen garantert kjører tom hjem: vurder 2.0.
-  returFaktor: 1.6,
+  // 1.0 = ingen retur betales, 2.0 = full tur/retur. 1.3 = antar noe tom
+  // retur, men regner med at en del oppdrag kjedes sammen med andre turer.
+  // For dedikerte lange turer der bilen garantert kjører tom hjem: vurder 1.6-2.0.
+  returFaktor: 1.3, // JUSTERT NED (var 1.6) — for høy pris meldt tilbake fra eier aug. 2026
 
   // --- Tidskostnad (sjåfør) ---
   timeprisSjafor: 340, // kr/time, LASTET kostnad (lønn + aga 14,1 % + feriepenger + overhead)
@@ -43,11 +44,14 @@ export const PRISCONFIG = {
 
   // --- Vekt-/volumtillegg ---
   // chargeableKg = max(faktisk vekt, volumvekt),  volumvekt = (L×B×H i cm) / 3000
+  // JUSTERT NED (var 0/150/400/900) — det bratte hoppet til 900 kr rett over
+  // 300 kg (lett å treffe på store, lette kolli) var en stor driver av "for
+  // dyrt"-følelsen. Glattet ut trinnene.
   vekttrinn: [
     { maksKg: 25, tillegg: 0 },
-    { maksKg: 100, tillegg: 150 },
-    { maksKg: 300, tillegg: 400 },
-    { maksKg: Infinity, tillegg: 900 },
+    { maksKg: 100, tillegg: 100 },
+    { maksKg: 300, tillegg: 300 },
+    { maksKg: Infinity, tillegg: 600 },
   ],
 
   // --- Tjenestetillegg ---
@@ -56,8 +60,8 @@ export const PRISCONFIG = {
   // --- Fortjeneste ---
   // Margin dekker fortjeneste + faste kostnader modellen ikke tar per km/time
   // (forsikring, årsavgift, avskrivning, admin). Høyt overhead => øk margin.
-  margin: 0.35, // 35 %
-  minstepris: 349, // kr — aldri under dette
+  margin: 0.2, // JUSTERT NED (var 0.35 / 35 %)
+  minstepris: 299, // kr — aldri under dette. JUSTERT NED (var 349)
   avrundTil: 10, // avrund sluttpris til nærmeste X kr
 } as const;
 
@@ -145,8 +149,9 @@ export function beregnPris(input: PrisInput): PrisResultat {
 }
 
 // -----------------------------------------------------------------------------
-// Eksempler (kjør `npx tsx lib/pricing.ts` for å sjekke):
-//   Drammen→Oslo, 45 km, 200 kg pall, standard  => ~1510 kr (elbil)
-//   Lokal 20 km, 50 kg, standard                => ~760 kr  (elbil)
-//   Lang tur 250 km, 100 kg, standard           => ~5580 kr (diesel)
+// Eksempler med gjeldende PRISCONFIG (120×80×100 cm pall der ikke annet oppgitt):
+//   Drammen→Oslo, 45 km, 200 kg pall, standard   => ~1470 kr (elbil)
+//   Lokal 20 km, 50 kg (40×40×40 cm), standard   => ~570 kr  (elbil)
+//   Lang tur 250 km, 100 kg (60×60×60 cm), std.  => ~4120 kr (diesel)
+//   Sarpsborg→Oslo, 93,6 km, 200 kg pall, std.   => ~2050 kr (elbil)
 // -----------------------------------------------------------------------------
