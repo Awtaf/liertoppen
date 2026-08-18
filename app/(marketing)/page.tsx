@@ -1,4 +1,5 @@
 import { Hero } from "@/components/Hero";
+import { QuoteCTA } from "@/components/QuoteCTA";
 import { Introduction } from "@/components/Introduction";
 import { Stats } from "@/components/Stats";
 import { About } from "@/components/About";
@@ -14,6 +15,7 @@ export default function Home() {
   return (
     <>
       <Hero />
+      <QuoteCTA />
       <Introduction />
       <Stats />
       <About />

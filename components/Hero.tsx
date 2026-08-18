@@ -71,11 +71,11 @@ export function Hero() {
           </p>
 
           <div className="mt-9 flex flex-col gap-4 sm:flex-row sm:items-center">
-            <Button href="/#kontakt" size="lg">
-              Diskuter et samarbeid
+            <Button href="/tilbud" size="lg">
+              Få prisestimat på 1 minutt
             </Button>
-            <Button href="/#bilparken" variant="secondary" size="lg">
-              Se bilparken
+            <Button href="/#kontakt" variant="secondary" size="lg">
+              Diskuter et samarbeid
             </Button>
           </div>
 
