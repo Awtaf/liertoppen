@@ -31,6 +31,15 @@ export async function GET(
     return NextResponse.json({ message: "Fant ikke sendingen." }, { status: 404 });
   }
 
+  // Eiere ser alt. Kunder kan kun hente etiketten for sine egne sendinger —
+  // uten dette kunne en innlogget kunde gjettet på en annen sendings-id.
+  if (user.app_metadata?.role === "customer") {
+    const { data: customer } = await admin.from("customers").select("id").eq("user_id", user.id).maybeSingle();
+    if (!customer || shipment.customer_id !== customer.id) {
+      return NextResponse.json({ message: "Fant ikke sendingen." }, { status: 404 });
+    }
+  }
+
   const pdfBytes = await generateLabelPdf(shipment);
 
   return new NextResponse(Buffer.from(pdfBytes), {
