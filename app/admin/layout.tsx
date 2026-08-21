@@ -16,15 +16,28 @@ export default async function AdminLayout({
   return (
     <div className="min-h-screen bg-bg-light">
       <header className="border-b border-border-light bg-white">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-          <Link href="/admin/leads" className="flex items-center gap-2.5">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-6 px-5">
+          <Link href="/admin/leads" className="flex shrink-0 items-center gap-2.5">
             <LogoIcon className="h-8 w-8" />
-            <span className="text-sm font-bold text-navy">
+            <span className="hidden text-sm font-bold text-navy sm:inline">
               Østfold Bud Service — Admin
             </span>
           </Link>
           {user && (
-            <form action={logout} className="flex items-center gap-4">
+            <nav className="flex items-center gap-5 text-sm font-medium text-slate">
+              <Link href="/admin/leads" className="hover:text-navy">
+                Leads
+              </Link>
+              <Link href="/admin/sendinger" className="hover:text-navy">
+                Sendinger
+              </Link>
+              <Link href="/admin/priser" className="hover:text-navy">
+                Priser
+              </Link>
+            </nav>
+          )}
+          {user && (
+            <form action={logout} className="flex shrink-0 items-center gap-4">
               <span className="hidden text-sm text-slate sm:inline">
                 {user.email}
               </span>
