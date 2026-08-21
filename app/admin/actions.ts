@@ -16,10 +16,15 @@ export async function login(_prevState: string | null, formData: FormData) {
   }
 
   const supabase = await createSupabaseServerClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-  if (error) {
+  if (error || !data.user) {
     return "Feil e-post eller passord.";
+  }
+
+  if (data.user.app_metadata?.role === "customer") {
+    await supabase.auth.signOut();
+    return "Denne kontoen har ikke tilgang til admin-panelet.";
   }
 
   redirect(redirectTo);
