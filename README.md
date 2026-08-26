@@ -211,8 +211,9 @@ bruker).
 ### Oppsett
 
 1. Kjør migrasjonene i Supabase SQL Editor, i rekkefølge:
-   `supabase/migrations/0004_ansatt_pwa.sql` og deretter
-   `supabase/migrations/0005_ansatt_seed.sql` (testdata).
+   `supabase/migrations/0004_ansatt_pwa.sql`,
+   `supabase/migrations/0005_ansatt_seed.sql` (oppgaver/butikkinnstillinger) og
+   `supabase/migrations/0006_ansatt_real_roster.sql` (ansattkontoene under).
 2. Sett miljøvariabelen `STAFF_SESSION_SECRET` (en lang, tilfeldig streng —
    brukes til å signere innloggingsøkten) i `.env.local` og i Vercel, i
    tillegg til de eksisterende `SUPABASE_URL`, `SUPABASE_ANON_KEY` og
@@ -225,16 +226,20 @@ bruker).
 4. Opprett/deaktiver ansatte og sett PIN-koder under **Ansatte**
    (`/ansatt/leder/ansatte`).
 
-### Testdata (fra `0005_ansatt_seed.sql`)
+### Ansattkontoer (fra `0006_ansatt_real_roster.sql`)
 
-| Navn | Brukernavn | Rolle | PIN | Passord |
-| --- | --- | --- | --- | --- |
-| Mari Haugen | `mari` | Ansatt | `1234` | – |
-| Jonas Berg | `jonas` | Ansatt | `5678` | – |
-| Silje Nordby | `silje` (e-post `silje@liertoppen.example`) | Leder | `9012` | `Liertoppen2026!` |
+| Navn | Brukernavn | Rolle |
+| --- | --- | --- |
+| Dibran | `dibran` | Ansatt |
+| Amer | `amer` | Ansatt |
+| Izzedin | `izzedin` | Ansatt |
+| Julius | `julius` | Ansatt |
+| Naser | `naser` | Leder (admin) |
 
-Alle navn er oppdiktet testdata — ikke de virkelige ansattnavnene som ligger i
-`legacy/Liertoppen`.
+De midlertidige passordene er **ikke** lagt i denne filen eller committet til
+git — de ble delt direkte med hver person i chatten der kontoene ble
+opprettet. Bytt dem (PIN eller passord) under **Ansatte**
+(`/ansatt/leder/ansatte`) så snart alle har logget inn første gang.
 
 ### Kjent begrensning: GPS kan i teorien forfalskes
 
