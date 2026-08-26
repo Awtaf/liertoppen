@@ -194,3 +194,78 @@ Opprett en `.env.local`-fil i prosjektroten (den er allerede lagt til i
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Framer Motion](https://www.framer.com/motion/) — diskrete scroll-animasjoner
 - [Lucide](https://lucide.dev/) — ikoner
+
+---
+
+## Ansatt-app for Telia Liertoppen (`/ansatt`)
+
+Dette repoet inneholder i tillegg en helt separat, selvstendig funksjon under
+`/ansatt`: en mobilvennlig PWA der ansatte ved Telia Liertoppen sjekker inn/ut
+av jobb via GPS, fører timer, krysser av daglige/ukentlige oppgaver for poeng,
+og ser en rangering — med et eget lederpanel under `/ansatt/leder`. Den er
+uavhengig av resten av nettsiden (kurerselskapet Østfold Bud Service AS
+ovenfor) og bruker egne databasetabeller (prefikset `staff_`) og en egen
+PIN-/passord-basert innlogging (ikke Supabase Auth, som resten av admin/portal
+bruker).
+
+### Oppsett
+
+1. Kjør migrasjonene i Supabase SQL Editor, i rekkefølge:
+   `supabase/migrations/0004_ansatt_pwa.sql`,
+   `supabase/migrations/0005_ansatt_seed.sql` (oppgaver/butikkinnstillinger) og
+   `supabase/migrations/0006_ansatt_real_roster.sql` (ansattkontoene under).
+2. Sett miljøvariabelen `STAFF_SESSION_SECRET` (en lang, tilfeldig streng —
+   brukes til å signere innloggingsøkten) i `.env.local` og i Vercel, i
+   tillegg til de eksisterende `SUPABASE_URL`, `SUPABASE_ANON_KEY` og
+   `SUPABASE_SERVICE_ROLE_KEY`-variablene appen allerede krever.
+3. Logg inn som leder på `/ansatt/logg-inn` og gå til
+   **Innstillinger** (`/ansatt/leder/innstillinger`) for å legge inn
+   butikkens nøyaktige koordinater (bredde-/lengdegrad) og ønsket
+   geofence-radius i meter. Sett testverdiene fra seed-migrasjonen er kun et
+   omtrentlig utgangspunkt.
+4. Opprett/deaktiver ansatte og sett PIN-koder under **Ansatte**
+   (`/ansatt/leder/ansatte`).
+
+### Ansattkontoer (fra `0006_ansatt_real_roster.sql`)
+
+| Navn | Brukernavn | Rolle |
+| --- | --- | --- |
+| Dibran | `dibran` | Ansatt |
+| Amer | `amer` | Ansatt |
+| Izzedin | `izzedin` | Ansatt |
+| Julius | `julius` | Ansatt |
+| Naser | `naser` | Leder (admin) |
+
+De midlertidige passordene er **ikke** lagt i denne filen eller committet til
+git — de ble delt direkte med hver person i chatten der kontoene ble
+opprettet. Bytt dem (PIN eller passord) under **Ansatte**
+(`/ansatt/leder/ansatte`) så snart alle har logget inn første gang.
+
+### Kjent begrensning: GPS kan i teorien forfalskes
+
+Innsjekk/utsjekk godkjennes kun når nettleserens
+[Geolocation API](https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API)
+rapporterer en posisjon innenfor den admin-konfigurerte radiusen fra
+butikken (Haversine-avstand, beregnet **på serveren** — klienten kan aldri
+sende et ferdig godkjent/avvist svar selv). Nettleserens posisjon kan i
+teorien forfalskes (f.eks. via nettleserverktøy eller en modifisert klient).
+Dette er en kjent, **uløst** begrensning ved all posisjon hentet fra
+nettleseren, ikke noe denne appen kan garantere bort. Mitigering: radiusen er
+justerbar av leder, og posisjonen (bredde-/lengdegrad og beregnet avstand)
+logges ved *hver* innsjekk/utsjekk i `staff_shifts`, slik at eventuelle avvik
+kan undersøkes i ettertid.
+
+### Personvern (GDPR / arbeidsmiljøloven)
+
+Denne funksjonen registrerer ansattes arbeidstid og posisjon, som er
+personopplysninger etter GDPR og norsk arbeidsmiljølov. Ved bruk i praksis:
+
+- **Informer de ansatte** om at arbeidstid og posisjon ved inn-/utsjekk
+  registreres, og hvorfor (formål: korrekt timeregistrering).
+- **Lagringsbegrensning**: vurder rutiner for sletting/anonymisering av gamle
+  økter dere ikke lenger trenger.
+- **Formålsbegrensning**: posisjon lagres **kun i øyeblikket** ansatte
+  trykker "Sjekk inn"/"Sjekk ut" — appen driver ingen kontinuerlig sporing av
+  ansattes posisjon utover disse to punktene.
+- Se punktet over om GPS-forfalskning — dette bør inngå i informasjonen til
+  ansatte og i en eventuell vurdering av personvernkonsekvenser (DPIA).
