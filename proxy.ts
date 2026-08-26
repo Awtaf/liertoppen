@@ -1,8 +1,18 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { STAFF_SESSION_COOKIE, staffSessionSecret, verifyStaffToken } from "@/lib/staff/session";
 
 const PUBLIC_ADMIN_PATHS = ["/admin/login"];
 const PUBLIC_PORTAL_PATHS = ["/portal/login", "/portal/velkommen"];
+// The manifest/icons must stay reachable without a session — the browser
+// requests them (installability checks, the login page's own <head> tags)
+// before any employee has logged in.
+const PUBLIC_ANSATT_PATHS = [
+  "/ansatt/logg-inn",
+  "/ansatt/manifest.webmanifest",
+  "/ansatt/icon",
+  "/ansatt/apple-icon",
+];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -60,9 +70,28 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  // Ansatt-appen (innsjekk/timer/oppgaver for Telia Liertoppen) bruker en
+  // egen, signert sesjonscookie i stedet for Supabase Auth (se
+  // lib/staff/session.ts) — helt uavhengig av kurer-admin/portal over.
+  const isPublicAnsattPath = PUBLIC_ANSATT_PATHS.some((path) => pathname.startsWith(path));
+  if (pathname.startsWith("/ansatt") && !isPublicAnsattPath) {
+    const token = request.cookies.get(STAFF_SESSION_COOKIE)?.value;
+    const staffSession = token ? await verifyStaffToken(token, staffSessionSecret()) : null;
+
+    if (!staffSession) {
+      const loginUrl = new URL("/ansatt/logg-inn", request.url);
+      loginUrl.searchParams.set("redirectTo", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    if (pathname.startsWith("/ansatt/leder") && staffSession.role !== "leder") {
+      return NextResponse.redirect(new URL("/ansatt", request.url));
+    }
+  }
+
   return response;
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/portal/:path*"],
+  matcher: ["/admin/:path*", "/portal/:path*", "/ansatt/:path*"],
 };
