@@ -134,6 +134,14 @@ export default async function ShipmentDetailPage({
               <dt className="text-slate">Vekt</dt>
               <dd className="font-medium text-navy">{shipment.goods.weightKg} kg</dd>
             </div>
+            {shipment.goods.lengthCm && shipment.goods.widthCm && shipment.goods.heightCm && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate">Mål</dt>
+                <dd className="font-medium text-navy">
+                  {shipment.goods.lengthCm} × {shipment.goods.widthCm} × {shipment.goods.heightCm} cm
+                </dd>
+              </div>
+            )}
             {shipment.goods.pallets !== undefined && (
               <div className="flex justify-between gap-4">
                 <dt className="text-slate">Antall paller</dt>

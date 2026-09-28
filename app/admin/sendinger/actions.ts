@@ -4,8 +4,9 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { priceShipment, type ServiceKey } from "@/lib/shipments/pricing";
+import { priceShipment, validateCargoAgainstLimit, type ServiceKey } from "@/lib/shipments/pricing";
 import { generateTrackingNumber } from "@/lib/shipments/tracking";
+import { resolveCustomerContext } from "@/lib/customers/context";
 import type { ShipmentStatus } from "@/lib/shipments/shipment";
 
 async function requireUser() {
@@ -20,7 +21,7 @@ async function requireUser() {
 }
 
 export async function createShipment(_prevState: string | null, formData: FormData) {
-  await requireUser();
+  const user = await requireUser();
 
   const serviceKey = String(formData.get("serviceKey") ?? "") as ServiceKey;
   const receiverName = String(formData.get("receiverName") ?? "").trim();
@@ -36,6 +37,9 @@ export async function createShipment(_prevState: string | null, formData: FormDa
   const customerEmail = String(formData.get("customerEmail") ?? "").trim().toLowerCase();
   const colli = Number(formData.get("colli") ?? 1);
   const weightKg = Number(formData.get("weightKg") ?? 0);
+  const lengthCm = Number(formData.get("lengthCm") ?? 0) || undefined;
+  const widthCm = Number(formData.get("widthCm") ?? 0) || undefined;
+  const heightCm = Number(formData.get("heightCm") ?? 0) || undefined;
   const pallets = Number(formData.get("pallets") ?? 1);
   const hours = Number(formData.get("hours") ?? 2);
   const extraKmOutsideZone = Number(formData.get("extraKmOutsideZone") ?? 0);
@@ -50,6 +54,15 @@ export async function createShipment(_prevState: string | null, formData: FormDa
     return "Fyll ut alle påkrevde felter.";
   }
 
+  // Kundekontekst slås opp FØR prisen beregnes, slik at en eventuell privat
+  // avtalepris (rate_overrides) faktisk brukes — ikke bare standard sonepris.
+  const context = customerEmail ? await resolveCustomerContext(user, customerEmail) : null;
+
+  const cargoError = validateCargoAgainstLimit({ weightKg, lengthCm, widthCm, heightCm }, context?.rateOverrides.maxCargo);
+  if (cargoError) {
+    return cargoError;
+  }
+
   let price;
   try {
     price = await priceShipment({
@@ -57,6 +70,7 @@ export async function createShipment(_prevState: string | null, formData: FormDa
       postnr: receiverZip,
       goods: { pallets, hours, extraKmOutsideZone },
       surcharges: { expressGuarantee, eveningWeekend, night, carry },
+      rateOverrides: context?.rateOverrides,
     });
   } catch (error) {
     console.error("Kunne ikke beregne pris:", error);
@@ -65,29 +79,18 @@ export async function createShipment(_prevState: string | null, formData: FormDa
 
   const admin = createSupabaseAdminClient();
 
-  let customerId: string | null = null;
-  if (customerEmail) {
-    const { data: existing } = await admin
+  let customerId: string | null = context?.customerId ?? null;
+  if (!customerId && customerEmail) {
+    const { data: created, error } = await admin
       .from("customers")
+      .insert({ name: senderName, email: customerEmail, phone: senderTel || null })
       .select("id")
-      .eq("email", customerEmail)
-      .limit(1)
-      .maybeSingle();
-
-    if (existing) {
-      customerId = existing.id as string;
-    } else {
-      const { data: created, error } = await admin
-        .from("customers")
-        .insert({ name: senderName, email: customerEmail, phone: senderTel || null })
-        .select("id")
-        .single();
-      if (error || !created) {
-        console.error("Kunne ikke opprette kunde:", error);
-        return "Kunne ikke opprette kunde.";
-      }
-      customerId = created.id as string;
+      .single();
+    if (error || !created) {
+      console.error("Kunne ikke opprette kunde:", error);
+      return "Kunne ikke opprette kunde.";
     }
+    customerId = created.id as string;
   }
 
   const trackingNumber = await generateTrackingNumber();
@@ -102,6 +105,9 @@ export async function createShipment(_prevState: string | null, formData: FormDa
       goods: {
         colli,
         weightKg,
+        lengthCm,
+        widthCm,
+        heightCm,
         pallets: serviceKey === "PALLET" ? pallets : undefined,
         hours: serviceKey === "HOURLY" ? hours : undefined,
       },

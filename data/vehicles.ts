@@ -32,6 +32,22 @@ export const vehicles: Vehicle[] = [
     image: null,
   },
   {
+    slug: "vw-id-buzz-cargo",
+    name: "Volkswagen ID. Buzz Cargo",
+    type: "Elektrisk varebil",
+    description:
+      "Vår nyeste elektriske varebil — smidig og utslippsfri, med god lastekapasitet for mindre og mellomstore sendinger i og rundt Oslo.",
+    highlights: [
+      "Elektrisk varebil",
+      "Inntil 745 kg nyttelast",
+      "3,9 m³ lasterom",
+      "Lasterom 221 × 173 × 128 cm",
+      "Egnet for mindre og mellomstore kolli",
+      "Passer godt til bykjøring og faste ruter",
+    ],
+    image: null,
+  },
+  {
     slug: "mercedes-benz-sprinter",
     name: "Mercedes-Benz Sprinter",
     type: "Stor varebil",

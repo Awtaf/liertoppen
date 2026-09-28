@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { validateInviteToken } from "@/lib/customers/invite";
-import { priceShipment, type ServiceKey } from "@/lib/shipments/pricing";
+import { priceShipment, validateCargoAgainstLimit, type ServiceKey, type CustomerRateOverrides } from "@/lib/shipments/pricing";
 import { generateTrackingNumber } from "@/lib/shipments/tracking";
 
 export async function portalLogin(_prevState: string | null, formData: FormData) {
@@ -112,13 +112,13 @@ async function requireCustomer() {
   const admin = createSupabaseAdminClient();
   const { data: customer } = await admin
     .from("customers")
-    .select("id, name, email, phone")
+    .select("id, name, email, phone, rate_overrides")
     .eq("user_id", user.id)
     .maybeSingle();
   if (!customer) {
     throw new Error("Fant ingen kunde koblet til denne kontoen.");
   }
-  return customer;
+  return customer as typeof customer & { rate_overrides: CustomerRateOverrides };
 }
 
 export async function createCustomerShipment(_prevState: string | null, formData: FormData) {
@@ -135,6 +135,9 @@ export async function createCustomerShipment(_prevState: string | null, formData
   const senderCity = String(formData.get("senderCity") ?? "").trim();
   const colli = Number(formData.get("colli") ?? 1);
   const weightKg = Number(formData.get("weightKg") ?? 0);
+  const lengthCm = Number(formData.get("lengthCm") ?? 0) || undefined;
+  const widthCm = Number(formData.get("widthCm") ?? 0) || undefined;
+  const heightCm = Number(formData.get("heightCm") ?? 0) || undefined;
   const pallets = Number(formData.get("pallets") ?? 1);
   const hours = Number(formData.get("hours") ?? 2);
   const expressGuarantee = formData.get("expressGuarantee") === "on";
@@ -148,6 +151,14 @@ export async function createCustomerShipment(_prevState: string | null, formData
     return "Fyll ut alle påkrevde felter.";
   }
 
+  const cargoError = validateCargoAgainstLimit(
+    { weightKg, lengthCm, widthCm, heightCm },
+    customer.rate_overrides?.maxCargo
+  );
+  if (cargoError) {
+    return cargoError;
+  }
+
   let price;
   try {
     price = await priceShipment({
@@ -155,6 +166,7 @@ export async function createCustomerShipment(_prevState: string | null, formData
       postnr: receiverZip,
       goods: { pallets, hours },
       surcharges: { expressGuarantee, eveningWeekend, night, carry },
+      rateOverrides: customer.rate_overrides,
     });
   } catch (error) {
     console.error("Kunne ikke beregne pris:", error);
@@ -178,6 +190,9 @@ export async function createCustomerShipment(_prevState: string | null, formData
       goods: {
         colli,
         weightKg,
+        lengthCm,
+        widthCm,
+        heightCm,
         pallets: serviceKey === "PALLET" ? pallets : undefined,
         hours: serviceKey === "HOURLY" ? hours : undefined,
       },

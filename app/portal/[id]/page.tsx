@@ -114,6 +114,18 @@ export default async function PortalShipmentPage({
               <dt className="text-slate">Kolli</dt>
               <dd className="font-medium text-navy">{shipment.goods.colli}</dd>
             </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate">Vekt</dt>
+              <dd className="font-medium text-navy">{shipment.goods.weightKg} kg</dd>
+            </div>
+            {shipment.goods.lengthCm && shipment.goods.widthCm && shipment.goods.heightCm && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate">Mål</dt>
+                <dd className="font-medium text-navy">
+                  {shipment.goods.lengthCm} × {shipment.goods.widthCm} × {shipment.goods.heightCm} cm
+                </dd>
+              </div>
+            )}
             {shipment.requested_delivery && (
               <div className="flex justify-between gap-4">
                 <dt className="text-slate">Ønsket levering</dt>

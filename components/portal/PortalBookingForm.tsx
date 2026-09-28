@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { createCustomerShipment } from "@/app/portal/actions";
-import type { ServiceKey, ShipmentPriceResult } from "@/lib/shipments/pricing";
+import type { ServiceKey, ShipmentPriceResult, CustomerRateOverrides } from "@/lib/shipments/pricing";
 
 const inputClass =
   "w-full rounded-lg border border-border-light bg-bg-light px-3 py-2 text-sm text-navy focus:border-green focus:bg-white focus-visible:outline-none";
@@ -20,6 +20,10 @@ export function PortalBookingForm() {
 
   const [serviceKey, setServiceKey] = useState<ServiceKey>("SAMEDAY_ROUTE");
   const [receiverZip, setReceiverZip] = useState("");
+  const [weightKg, setWeightKg] = useState(0);
+  const [lengthCm, setLengthCm] = useState<number | "">("");
+  const [widthCm, setWidthCm] = useState<number | "">("");
+  const [heightCm, setHeightCm] = useState<number | "">("");
   const [pallets, setPallets] = useState(1);
   const [hours, setHours] = useState(2);
   const [expressGuarantee, setExpressGuarantee] = useState(false);
@@ -29,6 +33,8 @@ export function PortalBookingForm() {
 
   const [price, setPrice] = useState<ShipmentPriceResult | null>(null);
   const [priceError, setPriceError] = useState<string | null>(null);
+  const [maxCargo, setMaxCargo] = useState<CustomerRateOverrides["maxCargo"] | null>(null);
+  const [cargoError, setCargoError] = useState<string | null>(null);
 
   const outsideZoneExpress = serviceKey === "EXPRESS" && price !== null && !price.zone;
 
@@ -38,6 +44,8 @@ export function PortalBookingForm() {
       if (receiverZip.trim().length !== 4) {
         setPrice(null);
         setPriceError(null);
+        setMaxCargo(null);
+        setCargoError(null);
         return;
       }
       fetch("/api/sendinger/quote", {
@@ -53,6 +61,10 @@ export function PortalBookingForm() {
           eveningWeekend,
           night,
           carry,
+          weightKg,
+          lengthCm: lengthCm || undefined,
+          widthCm: widthCm || undefined,
+          heightCm: heightCm || undefined,
         }),
       })
         .then(async (res) => {
@@ -65,6 +77,8 @@ export function PortalBookingForm() {
         .then((data) => {
           setPrice(data.price);
           setPriceError(null);
+          setMaxCargo(data.maxCargo ?? null);
+          setCargoError(data.cargoError ?? null);
         })
         .catch((err) => {
           if (err.name === "AbortError") return;
@@ -76,7 +90,20 @@ export function PortalBookingForm() {
       clearTimeout(timeout);
       controller.abort();
     };
-  }, [serviceKey, receiverZip, pallets, hours, expressGuarantee, eveningWeekend, night, carry]);
+  }, [
+    serviceKey,
+    receiverZip,
+    pallets,
+    hours,
+    expressGuarantee,
+    eveningWeekend,
+    night,
+    carry,
+    weightKg,
+    lengthCm,
+    widthCm,
+    heightCm,
+  ]);
 
   return (
     <form action={formAction} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -157,7 +184,47 @@ export function PortalBookingForm() {
             </div>
             <div>
               <label className={labelClass}>Vekt (kg)</label>
-              <input name="weightKg" type="number" min={0} defaultValue={0} className={inputClass} />
+              <input
+                name="weightKg"
+                type="number"
+                min={0}
+                value={weightKg}
+                onChange={(e) => setWeightKg(Number(e.target.value))}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Lengde (cm)</label>
+              <input
+                name="lengthCm"
+                type="number"
+                min={0}
+                value={lengthCm}
+                onChange={(e) => setLengthCm(e.target.value === "" ? "" : Number(e.target.value))}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Bredde (cm)</label>
+              <input
+                name="widthCm"
+                type="number"
+                min={0}
+                value={widthCm}
+                onChange={(e) => setWidthCm(e.target.value === "" ? "" : Number(e.target.value))}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Høyde (cm)</label>
+              <input
+                name="heightCm"
+                type="number"
+                min={0}
+                value={heightCm}
+                onChange={(e) => setHeightCm(e.target.value === "" ? "" : Number(e.target.value))}
+                className={inputClass}
+              />
             </div>
             {serviceKey === "PALLET" && (
               <div>
@@ -230,6 +297,23 @@ export function PortalBookingForm() {
         <div className="sticky top-6 rounded-2xl border border-border-light bg-white p-6">
           <h2 className="text-sm font-bold tracking-wide text-navy uppercase">Pris — beregnes live</h2>
 
+          {maxCargo && (
+            <p className="mt-3 rounded-lg border border-border-light bg-bg-light px-3 py-2 text-xs text-slate">
+              Sendingene dine kjøres med et kjøretøy som er begrenset til{" "}
+              {[
+                maxCargo.weightKg && `${maxCargo.weightKg} kg`,
+                maxCargo.lengthCm && maxCargo.widthCm && maxCargo.heightCm
+                  ? `${maxCargo.lengthCm}×${maxCargo.widthCm}×${maxCargo.heightCm} cm`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" / ")}.
+            </p>
+          )}
+          {cargoError && (
+            <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{cargoError}</p>
+          )}
+
           {!price && !priceError && <p className="mt-4 text-sm text-slate">Fyll inn mottakers postnummer for å se pris.</p>}
           {priceError && <p className="mt-4 text-sm text-red-600">{priceError}</p>}
 
@@ -265,7 +349,7 @@ export function PortalBookingForm() {
 
           <button
             type="submit"
-            disabled={isPending || !price || outsideZoneExpress}
+            disabled={isPending || !price || outsideZoneExpress || Boolean(cargoError)}
             className="mt-6 w-full rounded-lg bg-green px-5 py-3 text-sm font-semibold text-navy hover:bg-green/90 disabled:opacity-60"
           >
             {isPending ? "Booker…" : "Bekreft booking"}

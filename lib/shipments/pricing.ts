@@ -59,6 +59,50 @@ export type ShipmentPriceResult = {
   totalIncMva: number;
 };
 
+/** Privat avtale for én kunde — se supabase/migrations/0004_customer_rate_overrides.sql. */
+export type CustomerRateOverrides = {
+  /** Sonekode (som streng, siden det er en jsonb-nøkkel) -> avtalt pris per stopp for "Fast distribusjon". */
+  sameDayRouteZonePerStop?: Record<string, number>;
+  /** Sendinger for denne kunden skal ikke overstige dette — typisk fordi de kun kjøres med ett bestemt kjøretøy. */
+  maxCargo?: {
+    weightKg?: number;
+    lengthCm?: number;
+    widthCm?: number;
+    heightCm?: number;
+  };
+};
+
+export async function fetchCustomerRateOverrides(customerId: string): Promise<CustomerRateOverrides> {
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin.from("customers").select("rate_overrides").eq("id", customerId).maybeSingle();
+  if (error) throw new Error("Kunne ikke hente kundeavtale: " + error.message);
+  return (data?.rate_overrides as CustomerRateOverrides) ?? {};
+}
+
+/** Sjekker gods mot en eventuell kjøretøybegrensning for kunden. Returnerer en
+ * lesbar feilmelding hvis noe overstiger grensen, ellers null. */
+export function validateCargoAgainstLimit(
+  goods: { weightKg?: number; lengthCm?: number; widthCm?: number; heightCm?: number },
+  maxCargo: CustomerRateOverrides["maxCargo"] | undefined
+): string | null {
+  if (!maxCargo) return null;
+  const problems: string[] = [];
+  if (maxCargo.weightKg !== undefined && goods.weightKg !== undefined && goods.weightKg > maxCargo.weightKg) {
+    problems.push(`vekt (${goods.weightKg} kg, maks ${maxCargo.weightKg} kg)`);
+  }
+  if (maxCargo.lengthCm !== undefined && goods.lengthCm !== undefined && goods.lengthCm > maxCargo.lengthCm) {
+    problems.push(`lengde (${goods.lengthCm} cm, maks ${maxCargo.lengthCm} cm)`);
+  }
+  if (maxCargo.widthCm !== undefined && goods.widthCm !== undefined && goods.widthCm > maxCargo.widthCm) {
+    problems.push(`bredde (${goods.widthCm} cm, maks ${maxCargo.widthCm} cm)`);
+  }
+  if (maxCargo.heightCm !== undefined && goods.heightCm !== undefined && goods.heightCm > maxCargo.heightCm) {
+    problems.push(`høyde (${goods.heightCm} cm, maks ${maxCargo.heightCm} cm)`);
+  }
+  if (problems.length === 0) return null;
+  return `Sendingen er for stor for kjøretøyet som brukes til leveringene dine — ${problems.join(", ")}.`;
+}
+
 const MVA_RATE = 0.25;
 
 export async function fetchZones(): Promise<Zone[]> {
@@ -109,6 +153,7 @@ export async function priceShipment(input: {
   postnr: string;
   goods?: ShipmentGoods;
   surcharges?: SurchargeSelection;
+  rateOverrides?: CustomerRateOverrides;
 }): Promise<ShipmentPriceResult> {
   const [zones, services, surchargeRates] = await Promise.all([
     fetchZones(),
@@ -149,9 +194,15 @@ export async function priceShipment(input: {
       }
     }
   } else if (input.serviceKey === "SAMEDAY_ROUTE") {
-    const perStop = zone?.per_stop_price ?? cfg.fallbackPerStopPrice ?? 0;
+    const override = zone
+      ? input.rateOverrides?.sameDayRouteZonePerStop?.[String(zone.code)]
+      : undefined;
+    const perStop = override ?? zone?.per_stop_price ?? cfg.fallbackPerStopPrice ?? 0;
     lines.push({
-      label: `Pris per stopp, ${zone ? zone.name : "utenfor sone"}`,
+      label:
+        override !== undefined
+          ? `Pris per stopp (avtalt kundepris), ${zone!.name}`
+          : `Pris per stopp, ${zone ? zone.name : "utenfor sone"}`,
       amountExMva: perStop,
     });
     subtotal += perStop;

@@ -70,6 +70,9 @@ export type ShipmentParty = {
 export type ShipmentGoodsSnapshot = {
   colli: number;
   weightKg: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
   pallets?: number;
   hours?: number;
 };
