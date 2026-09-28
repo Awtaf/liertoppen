@@ -32,10 +32,10 @@ export const PRISCONFIG = {
   kostPerKmDiesel: 4.5, // kr/km
 
   // --- Tomkjøring hjem (bilen returnerer ofte uten last) ---
-  // 1.0 = ingen retur betales, 2.0 = full tur/retur. 1.3 = antar noe tom
-  // retur, men regner med at en del oppdrag kjedes sammen med andre turer.
+  // 1.0 = ingen retur betales, 2.0 = full tur/retur. 1.15 = antar mesteparten
+  // av oppdragene kjedes sammen med andre turer, kun en liten tom-andel igjen.
   // For dedikerte lange turer der bilen garantert kjører tom hjem: vurder 1.6-2.0.
-  returFaktor: 1.3, // JUSTERT NED (var 1.6) — for høy pris meldt tilbake fra eier aug. 2026
+  returFaktor: 1.15, // JUSTERT NED (var 1.3, opprinnelig 1.6) — fortsatt for høy pris meldt tilbake sep. 2026
 
   // --- Tidskostnad (sjåfør) ---
   timeprisSjafor: 340, // kr/time, LASTET kostnad (lønn + aga 14,1 % + feriepenger + overhead)
@@ -44,14 +44,16 @@ export const PRISCONFIG = {
 
   // --- Vekt-/volumtillegg ---
   // chargeableKg = max(faktisk vekt, volumvekt),  volumvekt = (L×B×H i cm) / 3000
-  // JUSTERT NED (var 0/150/400/900) — det bratte hoppet til 900 kr rett over
-  // 300 kg (lett å treffe på store, lette kolli) var en stor driver av "for
-  // dyrt"-følelsen. Glattet ut trinnene.
+  // JUSTERT NED (var 0/100/300/600, opprinnelig 0/150/400/900). Merk: en
+  // standard EUR-pall (120×80×100 cm) har volumvekt ~320 kg og havner derfor
+  // alltid i øverste trinn uansett faktisk vekt — det er en kjent svakhet ved
+  // selve volumvekt-formelen, bevisst ikke endret nå (eier valgte å senke
+  // satsene i stedet, se sep. 2026).
   vekttrinn: [
     { maksKg: 25, tillegg: 0 },
-    { maksKg: 100, tillegg: 100 },
-    { maksKg: 300, tillegg: 300 },
-    { maksKg: Infinity, tillegg: 600 },
+    { maksKg: 100, tillegg: 75 },
+    { maksKg: 300, tillegg: 200 },
+    { maksKg: Infinity, tillegg: 400 },
   ],
 
   // --- Tjenestetillegg ---
@@ -60,8 +62,8 @@ export const PRISCONFIG = {
   // --- Fortjeneste ---
   // Margin dekker fortjeneste + faste kostnader modellen ikke tar per km/time
   // (forsikring, årsavgift, avskrivning, admin). Høyt overhead => øk margin.
-  margin: 0.2, // JUSTERT NED (var 0.35 / 35 %)
-  minstepris: 299, // kr — aldri under dette. JUSTERT NED (var 349)
+  margin: 0.12, // JUSTERT NED (var 0.2, opprinnelig 0.35 / 35 %)
+  minstepris: 249, // kr — aldri under dette. JUSTERT NED (var 299, opprinnelig 349)
   avrundTil: 10, // avrund sluttpris til nærmeste X kr
 } as const;
 
@@ -150,8 +152,8 @@ export function beregnPris(input: PrisInput): PrisResultat {
 
 // -----------------------------------------------------------------------------
 // Eksempler med gjeldende PRISCONFIG (120×80×100 cm pall der ikke annet oppgitt):
-//   Drammen→Oslo, 45 km, 200 kg pall, standard   => ~1470 kr (elbil)
-//   Lokal 20 km, 50 kg (40×40×40 cm), standard   => ~570 kr  (elbil)
-//   Lang tur 250 km, 100 kg (60×60×60 cm), std.  => ~4120 kr (diesel)
-//   Sarpsborg→Oslo, 93,6 km, 200 kg pall, std.   => ~2050 kr (elbil)
+//   Drammen→Oslo, 45 km, 200 kg pall, standard   => ~1090 kr (elbil)
+//   Lokal 20 km, 50 kg (40×40×40 cm), standard   => ~470 kr  (elbil)
+//   Lang tur 250 km, 100 kg (60×60×60 cm), std.  => ~3410 kr (diesel)
+//   Sarpsborg→Oslo, 93,6 km, 200 kg pall, std.   => ~1570 kr (elbil)
 // -----------------------------------------------------------------------------
