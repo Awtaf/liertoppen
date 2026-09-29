@@ -2,6 +2,7 @@ import React from "react";
 import { AbsoluteFill, interpolate, random, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { noise2D } from "@remotion/noise";
 import { COLORS, FONT_FAMILY, SAFE, TEXT_SHADOW } from "../theme";
+import { isNotificationThought, thoughtSpawnFrame } from "../timing";
 import { CLAMP } from "../utils";
 
 export type ThoughtCloudProps = {
@@ -34,13 +35,12 @@ export const ThoughtCloud: React.FC<ThoughtCloudProps> = ({
     <AbsoluteFill dir="rtl" lang="ar" style={{ fontFamily: FONT_FAMILY }}>
       {Array.from({ length: count }, (_, i) => {
         const r = (key: string) => random(`${seed}-${i}-${key}`);
-        // Accelerating schedule: large gaps first, then almost every frame.
-        const spawn = Math.round(spawnWindow * Math.pow(i / count, 0.62));
+        const spawn = thoughtSpawnFrame(i, count, spawnWindow);
         const local = frame - spawn;
         if (local < 0) return null;
 
         const depth = r("depth");
-        const isNotification = i % 4 === 1;
+        const isNotification = isNotificationThought(i);
         const isTense = r("tense") > 0.72;
         const x = interpolate(r("x"), [0, 1], [SAFE.side + 150, width - SAFE.side - 150]);
         const y = interpolate(r("y"), [0, 1], [SAFE.top + 60, height - SAFE.bottom - 60]);

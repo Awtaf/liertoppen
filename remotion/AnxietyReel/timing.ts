@@ -30,6 +30,8 @@ export type SceneName = keyof typeof SCENES;
 export const BEATS = {
   hook: {
     thoughtsEnd: 44, // thoughts vanish on this frame (hard cut)
+    thoughtCount: 20,
+    thoughtSpawnWindow: 40,
     trick: 46, // "القلق عنده خدعة."
     demand: 68, // "بيطلب منك تحل بكرا… اليوم." (~0.5 s pause after the first line lands)
     exit: 97,
@@ -79,6 +81,14 @@ export const BEATS = {
 } as const;
 
 export const at = (scene: SceneName, beat: number) => SCENES[scene].from + beat;
+
+// Thought i of `count` spawns on this frame: large gaps first, then almost
+// every frame. Shared by ThoughtCloud (picture) and audio.ts (pings).
+export const thoughtSpawnFrame = (i: number, count: number, spawnWindow: number) =>
+  Math.round(spawnWindow * Math.pow(i / count, 0.62));
+
+// Every 4th thought is drawn as a phone notification (and gets a ping).
+export const isNotificationThought = (i: number) => i % 4 === 1;
 
 // ─── Mood ────────────────────────────────────────────────────────────────────
 // One continuous curve for the whole video: tense/cold/dark → calm/warm/bright.

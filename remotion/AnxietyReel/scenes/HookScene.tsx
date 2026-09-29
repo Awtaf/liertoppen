@@ -29,7 +29,7 @@ export const HookScene: React.FC = () => {
   return (
     <AbsoluteFill>
       <CameraRig shake={shake} zoom={zoom} pulse={pulse} seed="hook">
-        <ThoughtCloud thoughts={COPY.hook.thoughts} count={20} spawnWindow={b.thoughtsEnd - 4} collapseAt={b.thoughtsEnd} />
+        <ThoughtCloud thoughts={COPY.hook.thoughts} count={b.thoughtCount} spawnWindow={b.thoughtSpawnWindow} collapseAt={b.thoughtsEnd} />
 
         {/* SFX: hard cut — all sound stops at thoughtsEnd; deep impact at `trick` */}
         <Sequence from={b.trick} name="القلق عنده خدعة">
