@@ -6,10 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "remotion:studio": "remotion studio",
+    "remotion:render": "remotion render AnxietyReel out/anxiety-reel.mp4"
   },
   "dependencies": {
     "@remotion/cli": "^4.0.530",
+    "@remotion/fonts": "^4.0.530",
+    "@remotion/noise": "^4.0.530",
     "@remotion/player": "^4.0.530",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.3",
