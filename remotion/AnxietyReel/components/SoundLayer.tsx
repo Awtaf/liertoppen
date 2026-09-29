@@ -1,6 +1,6 @@
 import React from "react";
 import { Html5Audio, interpolate, Sequence, staticFile } from "remotion";
-import { MASTER_FADE, SOUND_CUES, VOICEOVER } from "../audio";
+import { MASTER_FADE, SOUND_CUES, VOICE_CUES, VOICEOVER } from "../audio";
 import { CLAMP } from "../utils";
 
 // Master gain at an absolute frame: 1, then fading to 0 with the picture.
@@ -11,10 +11,14 @@ const masterGain = (absoluteFrame: number) => interpolate(absoluteFrame, [MASTER
 export const SoundLayer: React.FC = () => {
   return (
     <>
-      {/* ▶ VOICEOVER — set VOICEOVER.src in audio.ts (e.g. "audio/voiceover.mp3") */}
-      {VOICEOVER.src ? (
-        <Html5Audio src={staticFile(VOICEOVER.src)} volume={(f) => VOICEOVER.volume * masterGain(f)} />
-      ) : null}
+      {/* ▶ VOICEOVER — one line per Sequence, starting with its caption (audio.ts) */}
+      {VOICEOVER.enabled
+        ? VOICE_CUES.map((cue) => (
+            <Sequence key={cue.id} name={`vo: ${cue.id}`} from={cue.from} layout="none">
+              <Html5Audio src={staticFile(cue.src)} volume={(f) => VOICEOVER.volume * masterGain(cue.from + f)} />
+            </Sequence>
+          ))
+        : null}
 
       {SOUND_CUES.filter((cue) => cue.src).map((cue) => (
         <Sequence key={cue.id} name={`sfx: ${cue.id}`} from={cue.from} durationInFrames={cue.durationInFrames} layout="none">

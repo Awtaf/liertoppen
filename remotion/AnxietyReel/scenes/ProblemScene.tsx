@@ -16,7 +16,7 @@ const FLASH_POSITIONS = [
   { x: 540, y: 600 },
 ];
 
-// 0:03.5–0:09 · BUILD THE PROBLEM
+// ≈0:04.6–0:08.7 · BUILD THE PROBLEM
 // An endless timeline rushes away, a search that never finds an answer,
 // flashes of "مضمون؟ أكيد؟ شو بعدين؟" and "أكيد" echoing in the background.
 export const ProblemScene: React.FC = () => {
@@ -57,10 +57,10 @@ export const ProblemScene: React.FC = () => {
 
       {/* Captions stay outside the camera rig so they never shake */}
       <Sequence from={b.line1} durationInFrames={b.line1Duration} name="VO: بتقعد تفكر">
-        <ArabicCaption phrase={COPY.problem.line1} durationInFrames={b.line1Duration} />
+        <ArabicCaption phrase={COPY.problem.line1} durationInFrames={b.line1Duration} voiceLine="problem1" />
       </Sequence>
       <Sequence from={b.line2} durationInFrames={b.line2Duration} name="VO: وبتحاول تلاقي جواب">
-        <ArabicCaption phrase={COPY.problem.line2} durationInFrames={b.line2Duration} />
+        <ArabicCaption phrase={COPY.problem.line2} durationInFrames={b.line2Duration} voiceLine="problem2" />
       </Sequence>
     </AbsoluteFill>
   );

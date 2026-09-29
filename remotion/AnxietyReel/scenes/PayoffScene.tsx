@@ -6,7 +6,7 @@ import { CameraRig } from "../components/CameraRig";
 import { NextStepScene } from "../components/NextStepScene";
 import { BEATS, SCENES } from "../timing";
 
-// 0:22–0:26.3 · EMOTIONAL PAYOFF
+// ≈0:21.1–0:25.7 · EMOTIONAL PAYOFF
 // A dark path; only the next step lights up. The rest stays unseen.
 export const PayoffScene: React.FC = () => {
   const frame = useCurrentFrame();
@@ -21,7 +21,7 @@ export const PayoffScene: React.FC = () => {
       </CameraRig>
 
       <Sequence from={b.line1} durationInFrames={b.line1Duration} name="VO: مو مطلوب منك">
-        <ArabicCaption phrase={COPY.payoff.line1} durationInFrames={b.line1Duration} placement="upper" fontSize={60} motion="breathe" />
+        <ArabicCaption phrase={COPY.payoff.line1} durationInFrames={b.line1Duration} placement="upper" fontSize={60} motion="breathe" voiceLine="payoff1" />
       </Sequence>
       <Sequence from={b.line2} durationInFrames={b.line2Duration} name="VO: مطلوب منك تعرف شو خطوتك الجاية">
         <ArabicCaption
@@ -31,6 +31,7 @@ export const PayoffScene: React.FC = () => {
           fontSize={66}
           motion="breathe"
           exit={false}
+          voiceLine="payoff2"
         />
       </Sequence>
     </AbsoluteFill>

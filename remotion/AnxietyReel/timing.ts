@@ -1,5 +1,6 @@
 import { interpolate } from "remotion";
 import { CLAMP } from "./utils";
+import VOICE_LENGTHS from "./voiceover-manifest.json";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // All timing lives here. Frames are at 30 fps (30 frames = 1 second).
@@ -16,67 +17,131 @@ export const VIDEO = {
   durationInFrames: 30 * FPS, // exactly 30 seconds
 } as const;
 
+// ─── Voiceover-driven timeline ───────────────────────────────────────────────
+// The spoken lines set the rhythm. Each line starts `gap` frames after the
+// previous one ends; its length comes from voiceover-manifest.json (written by
+// `npm run remotion:voiceover`). Captions start on the same frame as their
+// line, so changing the copy and regenerating the voice keeps everything in sync.
+// Tune the pacing with the gaps below.
+const VO_GAPS: Record<VoiceLineId, number> = {
+  trick: 46, // absolute start: right after the thoughts vanish
+  demand: 5,
+  problem1: 14, // whoosh into the timeline
+  problem2: 7,
+  question: 34, // HARD STOP: frozen frame + silence
+  bigQuestion: 16, // "short pause"
+  doIt: 18,
+  letGo: 8,
+  back: 9,
+  payoff1: 24, // big "اليوم." breathes
+  payoff2: 8,
+  final1: 10,
+  final2: 12,
+};
+const MIN_END_HOLD = 24; // frames the last line stays readable before the end
+
+export type VoiceLineId = keyof typeof VOICE_LENGTHS;
+
+type Span = { start: number; frames: number; end: number };
+
+export const VO: Record<VoiceLineId, Span> = (() => {
+  const spans = {} as Record<VoiceLineId, Span>;
+  let cursor = 0;
+  for (const id of Object.keys(VOICE_LENGTHS) as VoiceLineId[]) {
+    const start = cursor + VO_GAPS[id];
+    const frames = VOICE_LENGTHS[id];
+    spans[id] = { start, frames, end: start + frames };
+    cursor = start + frames;
+  }
+  if (cursor > VIDEO.durationInFrames - MIN_END_HOLD) {
+    throw new Error(
+      `Voiceover runs until frame ${cursor}, past ${VIDEO.durationInFrames - MIN_END_HOLD}. ` +
+        "Shorten VO_GAPS in timing.ts or speed up lines in voiceover.json.",
+    );
+  }
+  return spans;
+})();
+
+// Frames between words so a caption reveals at roughly the speaking pace.
+export const voStagger = (id: VoiceLineId, wordCount: number) =>
+  Math.max(2, Math.min(16, Math.round((VO[id].frames * 0.8) / Math.max(1, wordCount))));
+
+// ─── Scenes ──────────────────────────────────────────────────────────────────
+// Scene `from` values are absolute; BEATS are relative to their scene start,
+// so scenes can move or stretch without touching their internals.
+const HARD_STOP = VO.problem2.end + 4;
+const SOLUTION_FROM = VO.doIt.start - 3;
+const PAYOFF_FROM = VO.payoff1.start - 3;
+const FINAL_FROM = VO.final1.start - 2;
+const HOOK_END = VO.problem1.start - 6;
+
 export const SCENES = {
-  hook: { from: 0, duration: 105 }, // 0:00–0:03.5
-  problem: { from: 105, duration: 165 }, // 0:03.5–0:09
-  turn: { from: 270, duration: 150 }, // 0:09–0:14
-  solution: { from: 420, duration: 240 }, // 0:14–0:22
-  payoff: { from: 660, duration: 130 }, // 0:22–0:26.3
-  final: { from: 790, duration: 110 }, // 0:26.3–0:30
+  hook: { from: 0, duration: HOOK_END },
+  problem: { from: HOOK_END, duration: HARD_STOP - HOOK_END },
+  turn: { from: HARD_STOP, duration: SOLUTION_FROM - HARD_STOP },
+  solution: { from: SOLUTION_FROM, duration: PAYOFF_FROM - SOLUTION_FROM },
+  payoff: { from: PAYOFF_FROM, duration: FINAL_FROM - PAYOFF_FROM },
+  final: { from: FINAL_FROM, duration: VIDEO.durationInFrames - FINAL_FROM },
 } as const;
 
 export type SceneName = keyof typeof SCENES;
+
+const rel = (scene: SceneName, absolute: number) => absolute - SCENES[scene].from;
+
+const problemLine2 = rel("problem", VO.problem2.start);
+const HOOK_DEMAND_STAGGER = voStagger("demand", 5);
 
 export const BEATS = {
   hook: {
     thoughtsEnd: 44, // thoughts vanish on this frame (hard cut)
     thoughtCount: 20,
     thoughtSpawnWindow: 40,
-    trick: 46, // "القلق عنده خدعة."
-    demand: 68, // "بيطلب منك تحل بكرا… اليوم." (~0.5 s pause after the first line lands)
-    exit: 97,
+    trick: VO.trick.start, // "القلق عنده خدعة."
+    demand: VO.demand.start, // "بيطلب منك تحل بكرا… اليوم."
+    demandStagger: HOOK_DEMAND_STAGGER,
+    exit: SCENES.hook.duration - 8,
   },
   problem: {
-    line1: 6,
-    line1Duration: 58,
-    line2: 66,
-    line2Duration: 96,
-    loader: 58, // search/loading UI appears
-    flashes: [96, 114, 132], // "مضمون؟" "أكيد؟" "شو بعدين؟"
-    flashDuration: 20,
-    echo: 100, // "أكيد" repeating in the background
-    echoFadeOut: 140,
+    line1: rel("problem", VO.problem1.start),
+    line1Duration: VO.problem2.start - VO.problem1.start - 1,
+    line2: problemLine2,
+    line2Duration: SCENES.problem.duration - problemLine2 - 1,
+    loader: rel("problem", VO.problem1.start) + Math.round(VO.problem1.frames * 0.7), // search/loading UI
+    flashes: [problemLine2 + 8, problemLine2 + 24, problemLine2 + 40], // "مضمون؟" "أكيد؟" "شو بعدين؟"
+    flashDuration: 17,
+    echo: problemLine2 + 12, // "أكيد" repeating in the background
+    echoFadeOut: SCENES.problem.duration - 20,
   },
   turn: {
     freezeHold: 12, // frozen frame of the previous scene, then it dissolves
     freezeFade: 20,
-    question: 34, // "بس اسأل حالك سؤال واحد…"
-    bigQuestion: 90, // "شو الشي يلي بإيدي هلأ؟"
-    exit: 138,
+    question: rel("turn", VO.question.start), // "بس اسأل حالك سؤال واحد…"
+    bigQuestion: rel("turn", VO.bigQuestion.start), // "شو الشي يلي بإيدي هلأ؟"
+    exit: SCENES.turn.duration - 12,
   },
   solution: {
-    doIt: 0, // "إذا في شي بإيدك… اعمله."
-    doItDuration: 70,
-    check: 30, // task gets checked (relative to doIt)
-    letGo: 70, // "وإذا مافي شي بإيدك… لا تحاول تحلّه براسك."
-    letGoDuration: 90,
-    knotLoosen: [22, 78], // relative to letGo
-    backToToday: 160, // "ارجع لليوم."
-    backToTodayDuration: 80,
-    today: 18, // big "اليوم." (relative to backToToday)
+    doIt: rel("solution", VO.doIt.start), // "إذا في شي بإيدك… اعمله."
+    doItDuration: VO.letGo.start - VO.doIt.start,
+    check: Math.round(VO.doIt.frames * 0.8), // task gets checked on "اعمله" (relative to doIt)
+    letGo: rel("solution", VO.letGo.start), // "وإذا مافي شي بإيدك… لا تحاول تحلّه براسك."
+    letGoDuration: VO.back.start - VO.letGo.start,
+    knotLoosen: [Math.round(VO.letGo.frames * 0.45), VO.letGo.frames + 4], // relative to letGo
+    backToToday: rel("solution", VO.back.start), // "ارجع لليوم."
+    backToTodayDuration: SCENES.solution.duration - rel("solution", VO.back.start),
+    today: Math.round(VO.back.frames * 0.55), // big "اليوم." lands on the spoken word
   },
   payoff: {
-    line1: 6,
-    line1Duration: 62,
-    line2: 70,
-    line2Duration: 60,
-    stepLight: 64, // the single step lights up just before line 2
+    line1: rel("payoff", VO.payoff1.start),
+    line1Duration: VO.payoff2.start - VO.payoff1.start - 2,
+    line2: rel("payoff", VO.payoff2.start),
+    line2Duration: SCENES.payoff.duration - rel("payoff", VO.payoff2.start),
+    stepLight: rel("payoff", VO.payoff2.start) - 6, // the single step lights up just before line 2
   },
   final: {
-    line1: 0, // "اليوم إلو شغله."
-    line2: 34, // "وبكرا… منستقبله بكرا."
-    sub: 48, // "خذ نفس. وارجع للي بإيدك."
-    fadeOut: 92, // gentle fade to black until the last frame
+    line1: rel("final", VO.final1.start), // "اليوم إلو شغله."
+    line2: rel("final", VO.final2.start), // "وبكرا… منستقبله بكرا."
+    sub: rel("final", VO.final2.start) + 36, // "خذ نفس. وارجع للي بإيدك."
+    fadeOut: SCENES.final.duration - 14, // gentle fade to black until the last frame
   },
 } as const;
 
@@ -92,7 +157,20 @@ export const isNotificationThought = (i: number) => i % 4 === 1;
 
 // ─── Mood ────────────────────────────────────────────────────────────────────
 // One continuous curve for the whole video: tense/cold/dark → calm/warm/bright.
-const MOOD_FRAMES = [0, 44, 46, 105, 265, 270, 330, 420, 540, 660, 790, 900];
+const MOOD_FRAMES = [
+  0,
+  44,
+  46,
+  SCENES.problem.from,
+  HARD_STOP - 5,
+  HARD_STOP,
+  HARD_STOP + 60,
+  SCENES.solution.from,
+  SCENES.solution.from + 120,
+  SCENES.payoff.from,
+  SCENES.final.from,
+  VIDEO.durationInFrames,
+];
 const MOOD = {
   tension: [0.75, 1, 0.55, 0.8, 1, 0.25, 0.1, 0.05, 0, 0, 0, 0],
   warmth: [0, 0, 0, 0, 0, 0, 0.05, 0.25, 0.55, 0.75, 0.9, 0.9],
@@ -109,9 +187,23 @@ export const getMood = (frame: number): Mood => ({
 
 // ─── Ambient clock ───────────────────────────────────────────────────────────
 // Background light, particles and grain run on this clock instead of the raw
-// frame. It races in the first half, stops dead at the freeze (0:09) and then
+// frame. It races in the first half, stops dead at the hard stop and then
 // slows down until the image is almost still at the end.
-const SPEED_FRAMES = [0, 44, 45, 105, 265, 269, 270, 300, 330, 420, 660, 790, 900];
+const SPEED_FRAMES = [
+  0,
+  44,
+  45,
+  SCENES.problem.from,
+  HARD_STOP - 5,
+  HARD_STOP - 1,
+  HARD_STOP,
+  HARD_STOP + 30,
+  HARD_STOP + 60,
+  SCENES.solution.from,
+  SCENES.payoff.from,
+  SCENES.final.from,
+  VIDEO.durationInFrames,
+];
 const SPEED_VALUES = [1, 1.8, 0.6, 1.4, 2.2, 2.2, 0, 0, 0.35, 0.45, 0.3, 0.12, 0.08];
 
 const AMBIENT_CLOCK: number[] = (() => {

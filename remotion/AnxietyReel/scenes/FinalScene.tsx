@@ -3,9 +3,9 @@ import { AbsoluteFill, Sequence, spring, useCurrentFrame, useVideoConfig } from 
 import { COPY } from "../copy";
 import { KineticText } from "../components/KineticText";
 import { COLORS } from "../theme";
-import { BEATS } from "../timing";
+import { BEATS, voStagger } from "../timing";
 
-// 0:26.3–0:30 · FINAL LINE
+// ≈0:25.7–0:30 · FINAL LINE
 // Almost still. "اليوم إلو شغله." → "وبكرا… منستقبله بكرا." → small breath line.
 // The fade to black is handled at the top level (FadeToBlack).
 export const FinalScene: React.FC = () => {
@@ -24,13 +24,13 @@ export const FinalScene: React.FC = () => {
           opacity: 1 - settle * 0.2,
         }}
       >
-        <KineticText text={COPY.final.line1.text} tone={COPY.final.line1.tone} fontSize={96} weight={600} motion="breathe" stagger={6} />
+        <KineticText text={COPY.final.line1.text} tone={COPY.final.line1.tone} fontSize={96} weight={600} motion="breathe" stagger={voStagger("final1", 3)} />
       </div>
 
       {/* SFX: gentle resolve chord */}
       <Sequence from={b.line2} name="VO: وبكرا… منستقبله بكرا">
         <div style={{ position: "absolute", top: 880, left: 0, right: 0, display: "flex", justifyContent: "center" }}>
-          <KineticText text={COPY.final.line2.text} tone={COPY.final.line2.tone} fontSize={80} weight={700} motion="breathe" stagger={6} emphasisScale={1.1} maxWidth={940} />
+          <KineticText text={COPY.final.line2.text} tone={COPY.final.line2.tone} fontSize={80} weight={700} motion="breathe" stagger={voStagger("final2", 3)} emphasisScale={1.1} maxWidth={940} />
         </div>
       </Sequence>
 

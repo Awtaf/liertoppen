@@ -7,7 +7,7 @@ import { ThoughtCloud } from "../components/ThoughtCloud";
 import { BEATS, heartbeatAt, SCENES } from "../timing";
 import { CLAMP } from "../utils";
 
-// 0:00–0:03.5 · HOOK
+// ≈0:00–0:04.6 · HOOK (exact timing follows the voiceover, see timing.ts)
 // Thoughts flood in faster and faster (heartbeat + shake) → hard cut to black
 // → "القلق عنده خدعة." → ~0.5 s pause → "بيطلب منك تحل بكرا… اليوم."
 export const HookScene: React.FC = () => {
@@ -25,7 +25,7 @@ export const HookScene: React.FC = () => {
   // First line makes room when the second one arrives.
   const makeRoom = spring({ frame: frame - b.demand, fps, config: { damping: 200, stiffness: 90 } });
 
-  // SFX: heartbeat accelerating 0:00–0:01.5, notification pings on thoughts (see audio.ts)
+  // SFX: heartbeat accelerating until the thoughts vanish (0:01.5), notification pings on thoughts (see audio.ts)
   return (
     <AbsoluteFill>
       <CameraRig shake={shake} zoom={zoom} pulse={pulse} seed="hook">
@@ -65,7 +65,7 @@ export const HookScene: React.FC = () => {
               fontSize={84}
               weight={600}
               motion="rise"
-              stagger={4}
+              stagger={b.demandStagger}
               emphasisScale={1.32}
               exitAt={b.exit - b.demand}
               exitDuration={8}

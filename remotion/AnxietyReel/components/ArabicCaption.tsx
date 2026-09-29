@@ -2,6 +2,7 @@ import React from "react";
 import { AbsoluteFill } from "remotion";
 import type { Phrase } from "../copy";
 import { SAFE } from "../theme";
+import { VoiceLineId, voStagger } from "../timing";
 import { KineticMotion, KineticText } from "./KineticText";
 
 export type CaptionPlacement = "lower" | "upper" | "center";
@@ -9,7 +10,8 @@ export type CaptionPlacement = "lower" | "upper" | "center";
 export type ArabicCaptionProps = {
   phrase: Phrase;
   // Length of the Sequence this caption lives in. Words are revealed in the
-  // first ~40% of it and the caption dissolves in the last 12 frames.
+  // pace of its voiceover line (or the first ~40% of it), and the caption
+  // dissolves in the last 12 frames.
   durationInFrames: number;
   placement?: CaptionPlacement;
   fontSize?: number;
@@ -17,6 +19,8 @@ export type ArabicCaptionProps = {
   motion?: KineticMotion;
   delay?: number;
   exit?: boolean;
+  // Voiceover line this caption belongs to: words then reveal at its pace.
+  voiceLine?: VoiceLineId;
 };
 
 // One synced voiceover phrase, placed inside the Instagram safe zone.
@@ -30,9 +34,12 @@ export const ArabicCaption: React.FC<ArabicCaptionProps> = ({
   motion = "rise",
   delay = 0,
   exit = true,
+  voiceLine,
 }) => {
   const wordCount = phrase.text.split(/\s+/).filter(Boolean).length;
-  const stagger = Math.max(2, Math.min(5, Math.round((durationInFrames * 0.4) / wordCount)));
+  const stagger = voiceLine
+    ? voStagger(voiceLine, wordCount)
+    : Math.max(2, Math.min(5, Math.round((durationInFrames * 0.4) / wordCount)));
 
   return (
     <AbsoluteFill

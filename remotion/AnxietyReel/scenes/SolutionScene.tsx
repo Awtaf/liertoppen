@@ -9,7 +9,7 @@ import { StepIndicator } from "../components/StepIndicator";
 import { TaskCheck } from "../components/TaskCheck";
 import { BEATS, SCENES } from "../timing";
 
-// 0:14–0:22 · SOLUTION
+// ≈0:13.5–0:21.1 · SOLUTION
 // Three simple actions, one by one, while the light warms up:
 // 1. do what is in your hands (a task gets checked)
 // 2. don't solve the rest in your head (a knot loosens and disappears)
@@ -53,13 +53,13 @@ export const SolutionScene: React.FC = () => {
       </CameraRig>
 
       <Sequence from={b.doIt} durationInFrames={b.doItDuration} name="VO: إذا في شي بإيدك">
-        <ArabicCaption phrase={doIt} durationInFrames={b.doItDuration} />
+        <ArabicCaption phrase={doIt} durationInFrames={b.doItDuration} voiceLine="doIt" />
       </Sequence>
       <Sequence from={b.letGo} durationInFrames={b.letGoDuration} name="VO: وإذا مافي شي بإيدك">
-        <ArabicCaption phrase={letGo} durationInFrames={b.letGoDuration} />
+        <ArabicCaption phrase={letGo} durationInFrames={b.letGoDuration} voiceLine="letGo" />
       </Sequence>
       <Sequence from={b.backToToday} durationInFrames={b.backToTodayDuration} name="VO: ارجع لليوم">
-        <ArabicCaption phrase={back} durationInFrames={b.backToTodayDuration} />
+        <ArabicCaption phrase={back} durationInFrames={b.backToTodayDuration} voiceLine="back" />
       </Sequence>
     </AbsoluteFill>
   );

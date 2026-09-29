@@ -3,11 +3,11 @@ import { AbsoluteFill, Freeze, interpolate, Sequence, useCurrentFrame } from "re
 import { COPY } from "../copy";
 import { CameraRig } from "../components/CameraRig";
 import { KineticText } from "../components/KineticText";
-import { BEATS, SCENES } from "../timing";
+import { BEATS, SCENES, voStagger } from "../timing";
 import { CLAMP } from "../utils";
 import { ProblemScene } from "./ProblemScene";
 
-// 0:09–0:14 · THE TURN
+// ≈0:08.7–0:13.5 · THE TURN
 // Hard stop: the last frame of the previous scene freezes, drains of colour
 // and dissolves. Near-empty screen. Everything here moves slowly.
 export const TurnScene: React.FC = () => {
@@ -36,7 +36,7 @@ export const TurnScene: React.FC = () => {
               fontSize={62}
               weight={400}
               motion="breathe"
-              stagger={7}
+              stagger={voStagger("question", 5)}
               exitAt={b.bigQuestion - b.question - 16}
               exitDuration={14}
             />
@@ -51,7 +51,7 @@ export const TurnScene: React.FC = () => {
               fontSize={104}
               weight={700}
               motion="breathe"
-              stagger={6}
+              stagger={voStagger("bigQuestion", 5)}
               emphasisScale={1.2}
               lineHeight={1.4}
               maxWidth={800}
