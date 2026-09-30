@@ -23,7 +23,11 @@ export const SoundLayer: React.FC = () => {
       {SOUND_CUES.filter((cue) => cue.src).map((cue) => (
         <Sequence key={cue.id} name={`sfx: ${cue.id}`} from={cue.from} durationInFrames={cue.durationInFrames} layout="none">
           {/* Inside a Sequence the volume callback receives the cue-relative frame. */}
-          <Html5Audio src={staticFile(cue.src as string)} volume={(f) => cue.volume * masterGain(cue.from + f)} />
+          <Html5Audio
+            src={staticFile(cue.src as string)}
+            trimBefore={cue.trimBefore}
+            volume={(f) => cue.volume * masterGain(cue.from + f)}
+          />
         </Sequence>
       ))}
     </>

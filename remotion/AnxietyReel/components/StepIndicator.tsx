@@ -18,7 +18,7 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({ steps, exitAt }) =
   const exit = exitAt === undefined ? 0 : interpolate(frame, [exitAt, exitAt + 14], [0, 1], CLAMP);
 
   return (
-    <AbsoluteFill style={{ alignItems: "center", paddingTop: SAFE.top + 40, opacity: enter * (1 - exit) }}>
+    <AbsoluteFill style={{ alignItems: "center", paddingTop: SAFE.top + 100, opacity: enter * (1 - exit) }}>
       <div dir="rtl" style={{ display: "flex", gap: 18 }}>
         {steps.map((start, i) => {
           const on = spring({ frame: frame - start, fps, config: { damping: 200, stiffness: 80 } });

@@ -3,10 +3,11 @@ import { AbsoluteFill, interpolate, Sequence, useCurrentFrame } from "remotion";
 import { COPY } from "../copy";
 import { ArabicCaption } from "../components/ArabicCaption";
 import { CameraRig } from "../components/CameraRig";
+import { ChapterMark } from "../components/ChapterMark";
 import { NextStepScene } from "../components/NextStepScene";
 import { BEATS, SCENES } from "../timing";
 
-// ≈0:21.1–0:25.7 · EMOTIONAL PAYOFF
+// ≈0:34–0:40 · EMOTIONAL PAYOFF
 // A dark path; only the next step lights up. The rest stays unseen.
 export const PayoffScene: React.FC = () => {
   const frame = useCurrentFrame();
@@ -20,15 +21,21 @@ export const PayoffScene: React.FC = () => {
         <NextStepScene revealAt={b.stepLight} />
       </CameraRig>
 
-      <Sequence from={b.line1} durationInFrames={b.line1Duration} name="VO: مو مطلوب منك">
+      <Sequence durationInFrames={70} name="Chapter">
+        <ChapterMark number={COPY.chapters.payoff.number} title={COPY.chapters.payoff.title} tone="warm" />
+      </Sequence>
+
+      <Sequence from={b.line1} durationInFrames={b.line1Duration} name="VO: ليس مطلوبًا منك">
         <ArabicCaption phrase={COPY.payoff.line1} durationInFrames={b.line1Duration} placement="upper" fontSize={60} motion="breathe" voiceLine="payoff1" />
       </Sequence>
-      <Sequence from={b.line2} durationInFrames={b.line2Duration} name="VO: مطلوب منك تعرف شو خطوتك الجاية">
+      <Sequence from={b.line2} durationInFrames={b.line2Duration} name="VO: المطلوب فقط… أن تعرف خطوتك التالية">
         <ArabicCaption
           phrase={COPY.payoff.line2}
           durationInFrames={b.line2Duration}
           placement="upper"
-          fontSize={66}
+          font="serif"
+          weight={700}
+          fontSize={80}
           motion="breathe"
           exit={false}
           voiceLine="payoff2"

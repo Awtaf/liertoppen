@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, interpolateColors, random, useCurrentFrame, useVideoConfig } from "remotion";
 import { noise2D } from "@remotion/noise";
-import { ambientTime, getMood, heartbeatAt } from "../timing";
+import { ambientTime, FLASH_FRAMES, getMood, heartbeatAt, letterboxAt } from "../timing";
 import { CLAMP } from "../utils";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -96,11 +96,14 @@ export const Particles: React.FC = () => {
   );
 };
 
-// Film grain, vignette, heartbeat pulse and UI-shade — the "lens" layer that
-// sits on top of every scene.
+// Film grain, vignette, heartbeat pulse, light leaks, UI-shade and letterbox
+// bars — the "lens" layer that sits on top of every scene.
 export const FilmOverlay: React.FC = () => {
   const frame = useCurrentFrame();
+  const { width, height } = useVideoConfig();
   const mood = getMood(frame);
+  const t = ambientTime(frame);
+  const bar = letterboxAt(frame);
   const pulse = heartbeatAt(frame);
   // Grain re-seeds as the ambient clock runs: it stops moving at the freeze.
   const grainSeed = Math.floor(ambientTime(frame)) % 40;
@@ -128,6 +131,18 @@ export const FilmOverlay: React.FC = () => {
             "linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 14%, transparent 80%, rgba(0,0,0,0.4) 100%)",
         }}
       />
+      {/* Warm light leaks drifting in from the edges once the video calms down */}
+      <AbsoluteFill
+        style={{
+          mixBlendMode: "screen",
+          opacity: mood.warmth * 0.32,
+          background: `radial-gradient(circle 620px at ${width + 80 + noise2D("leak-a", t * 0.003, 0) * 160}px ${
+            height * 0.3 + noise2D("leak-b", 0, t * 0.003) * 260
+          }px, #ff9a4d 0%, transparent 70%), radial-gradient(circle 520px at ${-60 + noise2D("leak-c", t * 0.003, 2) * 120}px ${
+            height * 0.72 + noise2D("leak-d", 2, t * 0.003) * 220
+          }px, #ffcf8a 0%, transparent 70%)`,
+        }}
+      />
       {/* Grain */}
       <AbsoluteFill style={{ mixBlendMode: "screen", opacity: 0.05 + mood.tension * 0.05 }}>
         <svg width="100%" height="100%" viewBox="0 0 540 960" preserveAspectRatio="none">
@@ -138,8 +153,26 @@ export const FilmOverlay: React.FC = () => {
           <rect width="540" height="960" filter="url(#film-grain)" />
         </svg>
       </AbsoluteFill>
+      {/* Cinematic letterbox: closes in with the pressure, opens when calm */}
+      {bar > 0.5 ? (
+        <>
+          <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: bar, background: "#000" }} />
+          <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: bar, background: "#000" }} />
+        </>
+      ) : null}
     </AbsoluteFill>
   );
+};
+
+// A 1–2 frame white flash that punctuates the hardest cuts (timing.FLASH_FRAMES).
+export const FlashFrames: React.FC = () => {
+  const frame = useCurrentFrame();
+  let opacity = 0;
+  for (const f of FLASH_FRAMES) {
+    opacity = Math.max(opacity, interpolate(frame - f, [0, 1, 5], [0.55, 0.3, 0], CLAMP) * (frame >= f ? 1 : 0));
+  }
+  if (opacity <= 0) return null;
+  return <AbsoluteFill style={{ background: "#fff8ee", opacity, mixBlendMode: "screen", pointerEvents: "none" }} />;
 };
 
 // Gentle fade to black at the very end.

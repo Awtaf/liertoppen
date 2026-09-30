@@ -14,7 +14,7 @@ export const VIDEO = {
   fps: FPS,
   width: 1080,
   height: 1920,
-  durationInFrames: 30 * FPS, // exactly 30 seconds
+  durationInFrames: 45 * FPS, // exactly 45 seconds
 } as const;
 
 // ─── Voiceover-driven timeline ───────────────────────────────────────────────
@@ -24,21 +24,23 @@ export const VIDEO = {
 // line, so changing the copy and regenerating the voice keeps everything in sync.
 // Tune the pacing with the gaps below.
 const VO_GAPS: Record<VoiceLineId, number> = {
-  trick: 46, // absolute start: right after the thoughts vanish
-  demand: 5,
-  problem1: 14, // whoosh into the timeline
-  problem2: 7,
-  question: 34, // HARD STOP: frozen frame + silence
+  trick: 61, // absolute start: right after the thoughts vanish
+  demand: 8,
+  problem1: 18, // whoosh into the timeline
+  problem2: 8,
+  problem3: 8,
+  stop: 40, // HARD STOP: frozen frame + silence
+  question: 14,
   bigQuestion: 16, // "short pause"
-  doIt: 18,
-  letGo: 8,
-  back: 9,
-  payoff1: 24, // big "اليوم." breathes
-  payoff2: 8,
-  final1: 10,
-  final2: 12,
+  doIt: 22, // let the question sink in
+  letGo: 10,
+  back: 12,
+  payoff1: 30, // big "اليوم." breathes
+  payoff2: 12,
+  final1: 18,
+  final2: 14,
 };
-const MIN_END_HOLD = 24; // frames the last line stays readable before the end
+const MIN_END_HOLD = 50; // frames the last line stays readable before the end
 
 export type VoiceLineId = keyof typeof VOICE_LENGTHS;
 
@@ -69,11 +71,12 @@ export const voStagger = (id: VoiceLineId, wordCount: number) =>
 // ─── Scenes ──────────────────────────────────────────────────────────────────
 // Scene `from` values are absolute; BEATS are relative to their scene start,
 // so scenes can move or stretch without touching their internals.
-const HARD_STOP = VO.problem2.end + 4;
+const THOUGHTS_END = 58;
+export const HARD_STOP = VO.problem3.end + 6;
 const SOLUTION_FROM = VO.doIt.start - 3;
 const PAYOFF_FROM = VO.payoff1.start - 3;
 const FINAL_FROM = VO.final1.start - 2;
-const HOOK_END = VO.problem1.start - 6;
+const HOOK_END = VO.problem1.start - 8;
 
 export const SCENES = {
   hook: { from: 0, duration: HOOK_END },
@@ -88,45 +91,49 @@ export type SceneName = keyof typeof SCENES;
 
 const rel = (scene: SceneName, absolute: number) => absolute - SCENES[scene].from;
 
-const problemLine2 = rel("problem", VO.problem2.start);
-const HOOK_DEMAND_STAGGER = voStagger("demand", 5);
+const line1 = rel("problem", VO.problem1.start);
+const line2 = rel("problem", VO.problem2.start);
+const line3 = rel("problem", VO.problem3.start);
 
 export const BEATS = {
   hook: {
-    thoughtsEnd: 44, // thoughts vanish on this frame (hard cut)
-    thoughtCount: 20,
-    thoughtSpawnWindow: 40,
-    trick: VO.trick.start, // "القلق عنده خدعة."
-    demand: VO.demand.start, // "بيطلب منك تحل بكرا… اليوم."
-    demandStagger: HOOK_DEMAND_STAGGER,
+    thoughtsEnd: THOUGHTS_END, // thoughts vanish on this frame (hard cut)
+    thoughtCount: 22,
+    thoughtSpawnWindow: THOUGHTS_END - 4,
+    trick: VO.trick.start, // "للقلق خدعة واحدة."
+    demand: VO.demand.start, // "يطلب منك أن تحلّ الغد… اليوم."
+    demandStagger: voStagger("demand", 6),
     exit: SCENES.hook.duration - 8,
   },
   problem: {
-    line1: rel("problem", VO.problem1.start),
+    line1,
     line1Duration: VO.problem2.start - VO.problem1.start - 1,
-    line2: problemLine2,
-    line2Duration: SCENES.problem.duration - problemLine2 - 1,
-    loader: rel("problem", VO.problem1.start) + Math.round(VO.problem1.frames * 0.7), // search/loading UI
-    flashes: [problemLine2 + 8, problemLine2 + 24, problemLine2 + 40], // "مضمون؟" "أكيد؟" "شو بعدين؟"
+    line2,
+    line2Duration: VO.problem3.start - VO.problem2.start - 1,
+    line3, // "وكلّما بحثتَ أكثر… ازداد الضجيج." — the chaos peaks here
+    line3Duration: SCENES.problem.duration - line3 - 1,
+    loader: line1 + Math.round(VO.problem1.frames * 0.6), // search/loading UI
+    flashes: [line2 + Math.round(VO.problem2.frames * 0.6), line3 + 10, line3 + 34], // "مضمون؟" "أكيد؟" "ثم ماذا؟"
     flashDuration: 17,
-    echo: problemLine2 + 12, // "أكيد" repeating in the background
-    echoFadeOut: SCENES.problem.duration - 20,
+    echo: line3 + 4, // "أكيد" repeating in the background
+    echoFadeOut: SCENES.problem.duration - 12,
   },
   turn: {
     freezeHold: 12, // frozen frame of the previous scene, then it dissolves
-    freezeFade: 20,
-    question: rel("turn", VO.question.start), // "بس اسأل حالك سؤال واحد…"
-    bigQuestion: rel("turn", VO.bigQuestion.start), // "شو الشي يلي بإيدي هلأ؟"
+    freezeFade: 22,
+    stop: rel("turn", VO.stop.start), // "لكن… توقّف لحظة."
+    question: rel("turn", VO.question.start), // "واسأل نفسك سؤالًا واحدًا:"
+    bigQuestion: rel("turn", VO.bigQuestion.start), // "ما الذي بين يديّ الآن؟"
     exit: SCENES.turn.duration - 12,
   },
   solution: {
-    doIt: rel("solution", VO.doIt.start), // "إذا في شي بإيدك… اعمله."
+    doIt: rel("solution", VO.doIt.start), // "إن كان بيدك شيء… فافعله."
     doItDuration: VO.letGo.start - VO.doIt.start,
-    check: Math.round(VO.doIt.frames * 0.8), // task gets checked on "اعمله" (relative to doIt)
-    letGo: rel("solution", VO.letGo.start), // "وإذا مافي شي بإيدك… لا تحاول تحلّه براسك."
+    check: Math.round(VO.doIt.frames * 0.8), // task gets checked on "فافعله" (relative to doIt)
+    letGo: rel("solution", VO.letGo.start), // "وإن لم يكن بيدك شيء… فلا تحاول حلّه في رأسك."
     letGoDuration: VO.back.start - VO.letGo.start,
     knotLoosen: [Math.round(VO.letGo.frames * 0.45), VO.letGo.frames + 4], // relative to letGo
-    backToToday: rel("solution", VO.back.start), // "ارجع لليوم."
+    backToToday: rel("solution", VO.back.start), // "عُد إلى اليوم."
     backToTodayDuration: SCENES.solution.duration - rel("solution", VO.back.start),
     today: Math.round(VO.back.frames * 0.55), // big "اليوم." lands on the spoken word
   },
@@ -135,38 +142,58 @@ export const BEATS = {
     line1Duration: VO.payoff2.start - VO.payoff1.start - 2,
     line2: rel("payoff", VO.payoff2.start),
     line2Duration: SCENES.payoff.duration - rel("payoff", VO.payoff2.start),
-    stepLight: rel("payoff", VO.payoff2.start) - 6, // the single step lights up just before line 2
+    stepLight: rel("payoff", VO.payoff2.start) + Math.round(VO.payoff2.frames * 0.45), // on "خطوتك التالية"
   },
   final: {
-    line1: rel("final", VO.final1.start), // "اليوم إلو شغله."
-    line2: rel("final", VO.final2.start), // "وبكرا… منستقبله بكرا."
-    sub: rel("final", VO.final2.start) + 36, // "خذ نفس. وارجع للي بإيدك."
-    fadeOut: SCENES.final.duration - 14, // gentle fade to black until the last frame
+    line1: rel("final", VO.final1.start), // "لليوم ما يكفيه."
+    line2: rel("final", VO.final2.start), // "والغد… نستقبله غدًا."
+    sub: rel("final", VO.final2.start) + 40, // "خذ نفسًا عميقًا… وعُد إلى ما بين يديك."
+    fadeOut: SCENES.final.duration - 18, // gentle fade to black until the last frame
   },
 } as const;
 
 export const at = (scene: SceneName, beat: number) => SCENES[scene].from + beat;
 
-// Thought i of `count` spawns on this frame: large gaps first, then almost
-// every frame. Shared by ThoughtCloud (picture) and audio.ts (pings).
+// Thought i of `count` spawns on this frame: large gaps first (suspense), then
+// almost every frame. Shared by ThoughtCloud (picture) and audio.ts (pings).
 export const thoughtSpawnFrame = (i: number, count: number, spawnWindow: number) =>
-  Math.round(spawnWindow * Math.pow(i / count, 0.62));
+  Math.round(spawnWindow * Math.pow(i / count, 0.5));
 
 // Every 4th thought is drawn as a phone notification (and gets a ping).
 export const isNotificationThought = (i: number) => i % 4 === 1;
+
+// Short white flash frames that punctuate the hardest cuts.
+export const FLASH_FRAMES = [VO.trick.start, SCENES.problem.from + 2];
+
+// Cinematic letterbox bars (px): they close in as the pressure builds and
+// open up completely once the video calms down.
+const LETTERBOX_FRAMES = [
+  0,
+  VO.trick.start,
+  SCENES.problem.from,
+  HARD_STOP - 1,
+  HARD_STOP,
+  SCENES.solution.from,
+  SCENES.solution.from + 90,
+  SCENES.payoff.from,
+  VIDEO.durationInFrames,
+];
+const LETTERBOX_HEIGHT = [150, 130, 120, 185, 185, 120, 50, 0, 0];
+
+export const letterboxAt = (frame: number) => interpolate(frame, LETTERBOX_FRAMES, LETTERBOX_HEIGHT, CLAMP);
 
 // ─── Mood ────────────────────────────────────────────────────────────────────
 // One continuous curve for the whole video: tense/cold/dark → calm/warm/bright.
 const MOOD_FRAMES = [
   0,
-  44,
-  46,
+  THOUGHTS_END,
+  THOUGHTS_END + 2,
   SCENES.problem.from,
   HARD_STOP - 5,
   HARD_STOP,
   HARD_STOP + 60,
   SCENES.solution.from,
-  SCENES.solution.from + 120,
+  SCENES.solution.from + 150,
   SCENES.payoff.from,
   SCENES.final.from,
   VIDEO.durationInFrames,
@@ -174,7 +201,7 @@ const MOOD_FRAMES = [
 const MOOD = {
   tension: [0.75, 1, 0.55, 0.8, 1, 0.25, 0.1, 0.05, 0, 0, 0, 0],
   warmth: [0, 0, 0, 0, 0, 0, 0.05, 0.25, 0.55, 0.75, 0.9, 0.9],
-  brightness: [0.25, 0.4, 0.1, 0.3, 0.4, 0.06, 0.1, 0.3, 0.5, 0.55, 0.62, 0.45],
+  brightness: [0.25, 0.4, 0.1, 0.3, 0.45, 0.06, 0.1, 0.3, 0.5, 0.55, 0.62, 0.45],
 };
 
 export type Mood = { tension: number; warmth: number; brightness: number };
@@ -191,8 +218,8 @@ export const getMood = (frame: number): Mood => ({
 // slows down until the image is almost still at the end.
 const SPEED_FRAMES = [
   0,
-  44,
-  45,
+  THOUGHTS_END,
+  THOUGHTS_END + 1,
   SCENES.problem.from,
   HARD_STOP - 5,
   HARD_STOP - 1,
@@ -204,7 +231,7 @@ const SPEED_FRAMES = [
   SCENES.final.from,
   VIDEO.durationInFrames,
 ];
-const SPEED_VALUES = [1, 1.8, 0.6, 1.4, 2.2, 2.2, 0, 0, 0.35, 0.45, 0.3, 0.12, 0.08];
+const SPEED_VALUES = [1, 1.8, 0.6, 1.4, 2.4, 2.4, 0, 0, 0.35, 0.45, 0.3, 0.12, 0.08];
 
 const AMBIENT_CLOCK: number[] = (() => {
   const clock = [0];
@@ -220,53 +247,41 @@ export const ambientTime = (frame: number): number =>
 // ─── Heartbeat ───────────────────────────────────────────────────────────────
 // Drives the visual pulse (camera scale + vignette) and, via audio.ts, the
 // placement of heartbeat sound effects, so picture and sound stay in sync.
-const HOOK_HEARTBEAT = { start: 0, end: BEATS.hook.thoughtsEnd, bpmFrom: 76, bpmTo: 156 };
-const PROBLEM_HEARTBEAT = {
-  start: SCENES.problem.from,
-  end: SCENES.turn.from,
-  bpm: 104,
-  gain: 0.5,
-};
-const HEARTBEAT_THUMPS = [at("hook", BEATS.hook.trick), at("hook", BEATS.hook.demand)];
+// Each ramp accelerates linearly from bpmFrom to bpmTo.
+type HeartRamp = { start: number; end: number; bpmFrom: number; bpmTo: number; gain: number };
+const HEART_RAMPS: HeartRamp[] = [
+  { start: 0, end: THOUGHTS_END, bpmFrom: 70, bpmTo: 160, gain: 1 },
+  { start: SCENES.problem.from, end: HARD_STOP, bpmFrom: 92, bpmTo: 138, gain: 0.55 },
+];
+const HEARTBEAT_THUMPS = [VO.trick.start, VO.demand.start];
 
-const hookPhase = (frame: number) => {
-  const { start, end, bpmFrom, bpmTo } = HOOK_HEARTBEAT;
-  const t = (frame - start) / FPS;
-  const T = (end - start) / FPS;
-  return (bpmFrom * t + ((bpmTo - bpmFrom) * t * t) / (2 * T)) / 60;
+const rampPhase = (frame: number, r: HeartRamp) => {
+  const t = (frame - r.start) / FPS;
+  const T = (r.end - r.start) / FPS;
+  return (r.bpmFrom * t + ((r.bpmTo - r.bpmFrom) * t * t) / (2 * T)) / 60;
 };
-
-const problemPhase = (frame: number) =>
-  (((frame - PROBLEM_HEARTBEAT.start) / FPS) * PROBLEM_HEARTBEAT.bpm) / 60;
 
 // "lub-dub": a hard hit followed by a softer second beat.
 const beatShape = (frac: number) =>
   Math.exp(-frac * 26) + (frac > 0.24 ? 0.55 * Math.exp(-(frac - 0.24) * 30) : 0);
 
 export const heartbeatAt = (frame: number): number => {
-  if (frame >= HOOK_HEARTBEAT.start && frame < HOOK_HEARTBEAT.end) {
-    return beatShape(hookPhase(frame) % 1);
-  }
   for (const thump of HEARTBEAT_THUMPS) {
     if (frame >= thump && frame < thump + 24) return Math.exp(-(frame - thump) * 0.35);
   }
-  if (frame >= PROBLEM_HEARTBEAT.start && frame < PROBLEM_HEARTBEAT.end) {
-    return PROBLEM_HEARTBEAT.gain * beatShape(problemPhase(frame) % 1);
+  for (const r of HEART_RAMPS) {
+    if (frame >= r.start && frame < r.end) return r.gain * beatShape(rampPhase(frame, r) % 1);
   }
   return 0;
 };
 
 // Absolute frames on which a heartbeat "lub" lands.
 export const heartbeatFrames = (): number[] => {
-  const frames: number[] = [];
-  for (let f = HOOK_HEARTBEAT.start; f < HOOK_HEARTBEAT.end; f++) {
-    if (f === 0 || Math.floor(hookPhase(f)) > Math.floor(hookPhase(f - 1))) frames.push(f);
-  }
-  frames.push(...HEARTBEAT_THUMPS);
-  for (let f = PROBLEM_HEARTBEAT.start; f < PROBLEM_HEARTBEAT.end; f++) {
-    if (f === PROBLEM_HEARTBEAT.start || Math.floor(problemPhase(f)) > Math.floor(problemPhase(f - 1))) {
-      frames.push(f);
+  const frames: number[] = [...HEARTBEAT_THUMPS];
+  for (const r of HEART_RAMPS) {
+    for (let f = r.start; f < r.end; f++) {
+      if (f === r.start || Math.floor(rampPhase(f, r)) > Math.floor(rampPhase(f - 1, r))) frames.push(f);
     }
   }
-  return frames;
+  return frames.sort((a, b) => a - b);
 };

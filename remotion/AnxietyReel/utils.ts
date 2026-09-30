@@ -4,8 +4,8 @@ export type Word = {
 };
 
 // Splits a phrase into words and reads [emphasis] markers.
-// "بيطلب منك تحل [بكرا]… [اليوم]."  →  "بكرا…" and "اليوم." are emphasized.
-// Markers may span several words: "[خطوتك الجاية]".
+// "يطلب منك أن تحلّ [الغد]… [اليوم]."  →  "الغد…" and "اليوم." are emphasized.
+// Markers may span several words: "[خطوتك التالية]".
 // Words are never split into letters, so Arabic letter joining stays intact.
 export const parseEmphasis = (text: string): Word[] => {
   let open = false;

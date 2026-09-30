@@ -1,10 +1,12 @@
 import type { Tone } from "./theme";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// All on-screen Arabic copy (Levantine / Syrian colloquial).
+// All on-screen Arabic copy (Modern Standard Arabic, neutral).
 // Wrap words in [brackets] to emphasize them: they pop briefly larger, then
 // settle slightly bigger and in the scene's accent colour.
-// Markers can span several words: "[خطوتك الجاية]".
+// Markers can span several words: "[خطوتك التالية]".
+// The spoken version of each line (with tashkeel for pronunciation) lives in
+// voiceover.json.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type Phrase = {
@@ -15,85 +17,94 @@ export type Phrase = {
 const phrase = (text: string, tone: Tone = "neutral"): Phrase => ({ text, tone });
 
 export const COPY = {
+  // Chapter marks shown at the top of each scene.
+  chapters: {
+    hook: { number: "٠١", title: "الخدعة" },
+    problem: { number: "٠٢", title: "الدوّامة" },
+    turn: { number: "٠٣", title: "توقّف" },
+    solution: { number: "٠٤", title: "ما بين يديك" },
+    payoff: { number: "٠٥", title: "الخطوة التالية" },
+    final: { number: "٠٦", title: "اليوم" },
+  },
   hook: {
-    thoughts: ["شو رح يصير؟", "وإذا فشلت؟", "المصاري؟", "الشغل؟", "بعد سنة؟", "بعد خمس سنين؟"],
-    trick: phrase("[القلق] عنده خدعة.", "tense"),
-    demand: phrase("بيطلب منك تحل [بكرا]… [اليوم].", "tense"),
+    thoughts: ["ماذا سيحدث؟", "وإن فشلت؟", "المال؟", "العمل؟", "بعد عام؟", "بعد خمس سنوات؟"],
+    trick: phrase("[للقلق] خدعةٌ واحدة.", "tense"),
+    demand: phrase("يطلب منك أن تحلّ [الغد]… [اليوم].", "tense"),
   },
   problem: {
-    line1: phrase("بتقعد تفكر بشغلة لسا ما صارت…", "neutral"),
-    line2: phrase("وبتحاول تلاقي جواب لشي ما إلو جواب هلأ.", "neutral"),
-    flashes: [
-      phrase("مضمون؟", "neutral"),
-      phrase("[أكيد]؟", "tense"),
-      phrase("شو بعدين؟", "neutral"),
-    ],
+    line1: phrase("فتجلس تفكّر في أمرٍ لم يحدث بعد…", "neutral"),
+    line2: phrase("وتبحث عن جوابٍ لسؤالٍ لا جواب له الآن.", "neutral"),
+    line3: phrase("وكلّما بحثتَ أكثر… ازداد [الضجيج].", "tense"),
+    flashes: [phrase("مضمون؟", "neutral"), phrase("[أكيد]؟", "tense"), phrase("ثم ماذا؟", "neutral")],
     echoWord: "أكيد",
-    loaderLabel: "عم دوّر على جواب",
+    loaderLabel: "جارٍ البحث عن إجابة",
     // Dates rushing into the distance of the mental timeline.
     timeline: [
-      "بكرا",
-      "آذار ٢٠٢٧",
-      "بعد سنة",
+      "غدًا",
+      "مارس ٢٠٢٧",
+      "بعد عام",
       "٢٠٢٨",
-      "أيلول",
-      "بعد خمس سنين",
+      "سبتمبر",
+      "بعد خمس سنوات",
       "٢٠٣٠",
-      "تشرين الأول",
-      "كانون الثاني ٢٠٢٩",
-      "الشهر الجاي",
+      "أكتوبر",
+      "يناير ٢٠٢٩",
+      "الشهر القادم",
       "٢٠٣١",
-      "نيسان",
-      "بعد عشر سنين",
-      "حزيران ٢٠٢٧",
+      "أبريل",
+      "بعد عشر سنوات",
+      "يونيو ٢٠٢٧",
       "٢٠٣٥",
-      "آب",
-      "السنة الجاية",
-      "شباط ٢٠٣٢",
+      "أغسطس",
+      "العام القادم",
+      "فبراير ٢٠٣٢",
     ],
   },
   turn: {
-    question: phrase("بس اسأل حالك سؤال واحد…", "neutral"),
-    bigQuestion: phrase("شو الشي يلي [بإيدي] هلأ؟", "calm"),
+    stop: phrase("لكن… [توقّف] لحظة.", "neutral"),
+    question: phrase("واسأل نفسك سؤالًا واحدًا…", "neutral"),
+    bigQuestion: phrase("ما الذي [بين يديّ] الآن؟", "calm"),
   },
   solution: {
     steps: [
-      phrase("إذا في شي [بإيدك]… اعمله.", "calm"),
-      phrase("وإذا مافي شي [بإيدك]… لا تحاول تحلّه براسك.", "calm"),
-      phrase("ارجع [لليوم].", "calm"),
+      phrase("إن كان [بيدك] شيءٌ… فافعله.", "calm"),
+      phrase("وإن لم يكن [بيدك] شيء… فلا تحاول حلّه في رأسك.", "calm"),
+      phrase("عُد إلى [اليوم].", "calm"),
     ],
-    task: "ردّ على الرسالة يلي مأجّلها",
+    task: "الردّ على الرسالة المؤجّلة",
     today: phrase("[اليوم].", "calm"),
   },
   payoff: {
-    line1: phrase("مو مطلوب منك تعرف كيف رح تكون حياتك بعد سنة.", "neutral"),
-    line2: phrase("مطلوب منك تعرف شو [خطوتك الجاية].", "calm"),
+    line1: phrase("ليس مطلوبًا منك أن تعرف كيف ستكون حياتك بعد عام.", "neutral"),
+    line2: phrase("المطلوب فقط… أن تعرف [خطوتك التالية].", "calm"),
   },
   final: {
-    line1: phrase("[اليوم] إلو شغله.", "calm"),
-    line2: phrase("و[بكرا]… منستقبله [بكرا].", "calm"),
-    sub: phrase("خذ نفس. وارجع للي بإيدك.", "neutral"),
+    line1: phrase("[لليوم] ما يكفيه.", "calm"),
+    line2: phrase("و[الغد]… نستقبله [غدًا].", "calm"),
+    sub: phrase("خذ نفسًا عميقًا… وعُد إلى ما بين يديك.", "neutral"),
   },
 };
 
-// Exact voiceover script, for the voice artist and for syncing an MP3 later.
-export const VOICEOVER_SCRIPT = `القلق عنده خدعة…
-بيطلب منك تحل بكرا، اليوم.
+// Voiceover script (MSA), for a human voice artist.
+export const VOICEOVER_SCRIPT = `للقلقِ خدعةٌ واحدة…
+يطلبُ منكَ أن تحلَّ الغدَ… اليوم.
 
-بتقعد تفكر بشغلة لسا ما صارت،
-وبتحاول تلاقي جواب لشي ما إلو جواب هلأ.
+فتجلسُ تفكّرُ في أمرٍ لم يحدثْ بعد،
+وتبحثُ عن جوابٍ لسؤالٍ لا جوابَ له الآن.
+وكلّما بحثتَ أكثر… ازدادَ الضجيج.
 
-بس اسأل حالك سؤال واحد:
-شو الشي يلي بإيدي هلأ؟
+لكن… توقّفْ لحظة.
+واسألْ نفسكَ سؤالًا واحدًا:
+ما الذي بين يديَّ الآن؟
 
-إذا في شي بإيدك… اعمله.
-وإذا مافي شي بإيدك…
-لا تحاول تحلّه براسك.
+إن كان بيدِكَ شيءٌ… فافعلْه.
+وإن لم يكنْ بيدِكَ شيء…
+فلا تحاولْ أن تحلَّه في رأسِك.
 
-ارجع لليوم.
+عُدْ إلى اليوم.
 
-مو مطلوب منك تعرف كيف رح تكون حياتك بعد سنة.
-مطلوب منك تعرف شو خطوتك الجاية.
+ليس مطلوبًا منكَ أن تعرفَ كيف ستكونُ حياتُكَ بعد عام.
+المطلوبُ فقط… أن تعرفَ خطوتَكَ التالية.
 
-اليوم إلو شغله…
-وبكرا، منستقبله بكرا.`;
+لليومِ ما يكفيه…
+والغدُ… نستقبلُه غدًا.`;

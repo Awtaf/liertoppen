@@ -14,6 +14,8 @@ export type SoundCue = {
   from: number; // absolute frame (30 fps)
   // Cue is cut off after this many frames (used for the hard cuts).
   durationInFrames?: number;
+  // Skip this many frames at the start of the file.
+  trimBefore?: number;
   src: string | null;
   volume: number;
   note: string;
@@ -39,16 +41,20 @@ export const VOICE_CUES = (Object.keys(VO) as VoiceLineId[]).map((id) => ({
 
 const sfx = (name: string) => `audio/sfx/${name}.wav`;
 
-// Length of each generated file, in frames.
+// Length of each generated file, in frames (see generate-sfx.mjs).
 const LENGTH = {
   heartbeat: 21,
   notification: 21,
   reverseSuck: 21,
   whoosh: 27,
   glitch: 9,
+  drone: 420,
+  ticking: 300,
+  riser: 150,
 } as const;
 
-// The two hard cuts: at 0:01.5 the thoughts vanish, at the hard stop (≈0:08.7) everything stops.
+// The two hard cuts: the thoughts vanish (≈0:02), and the hard stop where
+// everything stops (≈0:15). Both follow timing.ts.
 const HOOK_CUT = at("hook", BEATS.hook.thoughtsEnd);
 const HARD_STOP = SCENES.turn.from;
 
@@ -57,11 +63,12 @@ const until = (from: number, length: number, cut: number) =>
   from < cut ? Math.max(1, Math.min(length, cut - from)) : length;
 
 const NOTIFICATION_VARIANTS = ["notification-a", "notification-b", "notification-c"];
+const LOADER_FROM = at("problem", BEATS.problem.loader);
 
 export const SOUND_CUES: SoundCue[] = [
-  // 0:00–0:01.5 · HEARTBEAT — one "lub-dub" per beat, accelerating with the
-  // thoughts (76 → 156 bpm) and cut dead at 0:01.5. Two single thumps land on
-  // the hook headlines; a softer 104 bpm pulse runs under the problem scene.
+  // HEARTBEAT — one "lub-dub" per beat, accelerating with the thoughts
+  // (70 → 160 bpm) and cut dead when they vanish. Two single thumps land on
+  // the hook headlines; a softer pulse accelerates again under the problem.
   ...heartbeatFrames().map((frame, i) => {
     const inHook = frame < HOOK_CUT;
     return {
@@ -75,8 +82,8 @@ export const SOUND_CUES: SoundCue[] = [
     };
   }),
 
-  // 0:00–0:01.5 · NOTIFICATIONS — a soft ping on every thought drawn as a
-  // phone notification, getting a little louder as the panic builds.
+  // NOTIFICATIONS — a soft ping on every thought drawn as a phone
+  // notification, getting a little louder as the panic builds.
   ...Array.from({ length: BEATS.hook.thoughtCount }, (_, i) => i)
     .filter(isNotificationThought)
     .map((i, k) => {
@@ -91,8 +98,8 @@ export const SOUND_CUES: SoundCue[] = [
       };
     }),
 
-  // 0:00.8–0:01.5 · HARD CUT — reverse-cymbal suck that ends exactly on the
-  // frame the thoughts vanish. After it: silence.
+  // HARD CUT — reverse-cymbal suck that ends exactly on the frame the
+  // thoughts vanish. After it: silence.
   {
     id: "cut-to-silence",
     from: HOOK_CUT - LENGTH.reverseSuck,
@@ -101,33 +108,36 @@ export const SOUND_CUES: SoundCue[] = [
     volume: 0.85,
     note: "reverse-cymbal suck ending exactly on the cut",
   },
-  // 0:01.5 · "القلق عنده خدعة."
-  { id: "impact-trick", from: at("hook", BEATS.hook.trick), src: sfx("impact"), volume: 0.6, note: "deep sub impact" },
-  // ≈0:03.5 · "بيطلب منك تحل بكرا… اليوم." — tonal hits on بكرا and اليوم
-  // Word 4 (بكرا) and word 5 (اليوم) pop 2 frames after they start revealing.
-  { id: "hit-bukra", from: at("hook", BEATS.hook.demand + 3 * BEATS.hook.demandStagger + 2), src: sfx("hit-high"), volume: 0.35, note: "tonal hit on بكرا" },
-  { id: "hit-alyom", from: at("hook", BEATS.hook.demand + 4 * BEATS.hook.demandStagger + 2), src: sfx("hit-low"), volume: 0.45, note: "tonal hit on اليوم" },
-  // ≈0:04.4 · WHOOSH into the mental timeline (peaks on the scene change)
+  // "للقلق خدعةٌ واحدة." (with the white flash frame)
+  { id: "impact-trick", from: BEATS.hook.trick, src: sfx("impact"), volume: 0.6, note: "deep sub impact" },
+  // "يطلب منك أن تحلّ الغد… اليوم." — word 5 (الغد) and word 6 (اليوم) pop
+  // 2 frames after they start revealing.
+  { id: "hit-ghad", from: BEATS.hook.demand + 4 * BEATS.hook.demandStagger + 2, src: sfx("hit-high"), volume: 0.35, note: "tonal hit on الغد" },
+  { id: "hit-alyom", from: BEATS.hook.demand + 5 * BEATS.hook.demandStagger + 2, src: sfx("hit-low"), volume: 0.45, note: "tonal hit on اليوم" },
+  // WHOOSH into the mental timeline (peaks on the scene change + flash)
   { id: "whoosh-timeline", from: at("hook", BEATS.hook.exit), src: sfx("whoosh"), volume: 0.55, note: "fast whoosh / air rush" },
-  // 0:04.6–0:08.7 · timeline rushing past
+  // The timeline rushing past: the drone is trimmed at its start so its
+  // loudest part always ends exactly on the hard stop.
   {
     id: "timeline-drone",
     from: SCENES.problem.from,
     durationInFrames: HARD_STOP - SCENES.problem.from,
+    trimBefore: Math.max(0, LENGTH.drone - (HARD_STOP - SCENES.problem.from)),
     src: sfx("drone"),
     volume: 0.28,
     note: "rising tense drone, slowly getting louder",
   },
-  // the loader keeps spinning
+  // The loader keeps spinning: ticking speeds up towards the hard stop.
   {
     id: "loader-ticking",
-    from: at("problem", BEATS.problem.loader),
-    durationInFrames: HARD_STOP - at("problem", BEATS.problem.loader),
+    from: LOADER_FROM,
+    durationInFrames: HARD_STOP - LOADER_FROM,
+    trimBefore: Math.max(0, LENGTH.ticking - (HARD_STOP - LOADER_FROM)),
     src: sfx("ticking"),
     volume: 0.15,
     note: "dry clock ticking, speeding up",
   },
-  // ≈0:07.0 / 0:07.5 / 0:08.0 · flashes "مضمون؟" "أكيد؟" "شو بعدين؟"
+  // Flashes "مضمون؟" "أكيد؟" "ثم ماذا؟"
   ...BEATS.problem.flashes.map((beat, i) => ({
     id: `flash-${i}`,
     from: at("problem", beat),
@@ -136,10 +146,27 @@ export const SOUND_CUES: SoundCue[] = [
     volume: 0.28,
     note: "short glitch tick",
   })),
-  // 0:08.7 · HARD STOP — everything above is cut on this frame; the drone's
-  // pitch collapses (tape-stop), then ~1 s of true silence.
+  // "وكلّما بحثتَ أكثر… ازداد الضجيج." — a riser that peaks on the hard stop.
+  {
+    id: "riser",
+    from: HARD_STOP - LENGTH.riser,
+    durationInFrames: LENGTH.riser,
+    src: sfx("riser"),
+    volume: 0.4,
+    note: "noise + pitch riser, loudest on its last frame, then cut",
+  },
+  // HARD STOP — everything above is cut on this frame; the drone's pitch
+  // collapses (tape-stop), then ~1.3 s of true silence.
   { id: "hard-stop", from: HARD_STOP, src: sfx("tape-stop"), volume: 0.45, note: "tape-stop, then silence" },
-  // 0:09.7 → end · CALM AMBIENCE — warm pad in D; brightens as the solution starts.
+  // "لكن… توقّف لحظة." — one deep, soft boom on "توقّف".
+  {
+    id: "stop-boom",
+    from: VO.stop.start + Math.round(VO.stop.frames * 0.35),
+    src: sfx("sub-boom"),
+    volume: 0.6,
+    note: "soft, deep sub boom",
+  },
+  // CALM AMBIENCE — warm pad in D; fades in with "توقّف", brightens as the solution starts.
   {
     id: "calm-ambience",
     from: HARD_STOP + 30,
@@ -148,9 +175,9 @@ export const SOUND_CUES: SoundCue[] = [
     volume: 0.28,
     note: "calm ambient pad, 2 s fade-in, warmer as the solution starts",
   },
-  // ≈0:15.3 · the task gets checked off
-  { id: "check", from: at("solution", BEATS.solution.check), src: sfx("check"), volume: 0.4, note: "soft, warm UI tick" },
-  // ≈0:17.5–0:19.4 · the knot loosens
+  // The task gets checked off.
+  { id: "check", from: at("solution", BEATS.solution.doIt + BEATS.solution.check), src: sfx("check"), volume: 0.4, note: "soft, warm UI tick" },
+  // The knot loosens.
   {
     id: "knot-release",
     from: at("solution", BEATS.solution.letGo + BEATS.solution.knotLoosen[0]),
@@ -158,7 +185,7 @@ export const SOUND_CUES: SoundCue[] = [
     volume: 0.35,
     note: "string tension releasing / long exhale",
   },
-  // ≈0:19.8 · soft whoosh landing on a single piano note with "اليوم."
+  // Soft whoosh landing on a single piano note with "اليوم."
   {
     id: "whoosh-today",
     from: at("solution", BEATS.solution.backToToday + BEATS.solution.today - 6),
@@ -166,11 +193,11 @@ export const SOUND_CUES: SoundCue[] = [
     volume: 0.5,
     note: "soft slow whoosh + single piano note (D4)",
   },
-  // ≈0:23.5 · the next step lights up
+  // The next step lights up.
   { id: "step-light", from: at("payoff", BEATS.payoff.stepLight), src: sfx("shimmer"), volume: 0.35, note: "warm shimmer / light swell" },
-  // ≈0:27.2 · "وبكرا… منستقبله بكرا."
+  // "والغد… نستقبله غدًا."
   { id: "final-swell", from: at("final", BEATS.final.line2), src: sfx("resolve"), volume: 0.45, note: "gentle resolving D major chord" },
-  // ≈0:29.5 → 0:30 · everything fades out with the picture (SoundLayer).
+  // Everything fades out with the picture (SoundLayer).
 ];
 
 // Master fade-out, in sync with the picture's FadeToBlack.

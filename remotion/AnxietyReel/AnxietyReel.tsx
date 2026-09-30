@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, Sequence } from "remotion";
-import { CinematicBackground, FadeToBlack, FilmOverlay } from "./components/CinematicBackground";
+import { CinematicBackground, FadeToBlack, FilmOverlay, FlashFrames } from "./components/CinematicBackground";
 import { SoundLayer } from "./components/SoundLayer";
 import { FinalScene } from "./scenes/FinalScene";
 import { HookScene } from "./scenes/HookScene";
@@ -11,8 +11,8 @@ import { TurnScene } from "./scenes/TurnScene";
 import { COLORS } from "./theme";
 import { BEATS, SCENES, VIDEO } from "./timing";
 
-// "القلق بيطلب منك تحل بكرا… اليوم."
-// 30 s · 1080x1920 · 30 fps Instagram Reel.
+// "القلق يطلب منك أن تحلّ الغد… اليوم."
+// 45 s · 1080x1920 · 30 fps Instagram Reel (Modern Standard Arabic).
 //   Copy   → copy.ts   (all Arabic text + exact voiceover script)
 //   Timing → timing.ts (scene starts, beats, mood curve, heartbeat)
 //   Sound  → audio.ts  (voiceover + SFX placeholders with frame timing)
@@ -40,6 +40,7 @@ export const AnxietyReel: React.FC = () => {
         <FinalScene />
       </Sequence>
 
+      <FlashFrames />
       <FilmOverlay />
       <FadeToBlack from={SCENES.final.from + BEATS.final.fadeOut} to={VIDEO.durationInFrames - 1} />
 

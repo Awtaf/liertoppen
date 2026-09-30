@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, interpolate, random, useCurrentFrame, useVideoConfig } from "remotion";
-import { COLORS, FONT_FAMILY, SAFE } from "../theme";
+import { COLORS, FONTS, SAFE } from "../theme";
 import { CLAMP } from "../utils";
 
 export type EchoWordsProps = {
@@ -28,7 +28,7 @@ export const EchoWords: React.FC<EchoWordsProps> = ({
   const fade = interpolate(frame, [fadeOutAt, fadeOutAt + fadeOutDuration], [1, 0], CLAMP);
 
   return (
-    <AbsoluteFill dir="rtl" lang="ar" style={{ fontFamily: FONT_FAMILY, opacity: fade }}>
+    <AbsoluteFill dir="rtl" lang="ar" style={{ fontFamily: FONTS.display, opacity: fade }}>
       {Array.from({ length: count }, (_, i) => {
         const local = frame - i * interval;
         if (local < 0) return null;
@@ -44,7 +44,7 @@ export const EchoWords: React.FC<EchoWordsProps> = ({
               top: interpolate(r("y"), [0, 1], [SAFE.top, height - SAFE.bottom]),
               transform: `translate(-50%, -50%) scale(${1 + local * 0.003})`,
               fontSize: size,
-              fontWeight: 700,
+              fontWeight: 900,
               color: r("tone") > 0.6 ? COLORS.tense : COLORS.text,
               opacity: appear * (0.05 + r("o") * 0.12),
               filter: `blur(${2 + r("blur") * 6}px)`,

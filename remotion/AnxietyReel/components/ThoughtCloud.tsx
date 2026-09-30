@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill, interpolate, random, spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { noise2D } from "@remotion/noise";
-import { COLORS, FONT_FAMILY, SAFE, TEXT_SHADOW } from "../theme";
+import { COLORS, FONTS, SAFE, TEXT_SHADOW } from "../theme";
 import { isNotificationThought, thoughtSpawnFrame } from "../timing";
 import { CLAMP } from "../utils";
 
@@ -32,7 +32,7 @@ export const ThoughtCloud: React.FC<ThoughtCloudProps> = ({
   const urgency = interpolate(frame, [0, collapseAt], [0.5, 2.6], CLAMP);
 
   return (
-    <AbsoluteFill dir="rtl" lang="ar" style={{ fontFamily: FONT_FAMILY }}>
+    <AbsoluteFill dir="rtl" lang="ar" style={{ fontFamily: FONTS.display }}>
       {Array.from({ length: count }, (_, i) => {
         const r = (key: string) => random(`${seed}-${i}-${key}`);
         const spawn = thoughtSpawnFrame(i, count, spawnWindow);
@@ -73,7 +73,7 @@ export const ThoughtCloud: React.FC<ThoughtCloudProps> = ({
               opacity: interpolate(enter, [0, 0.4], [0, 1], CLAMP) * age * (0.45 + depth * 0.55),
               filter: `blur(${blur}px)`,
               fontSize,
-              fontWeight: isTense ? 700 : 500,
+              fontWeight: isTense ? 800 : 400,
               color: isTense ? COLORS.tense : COLORS.text,
               textShadow: TEXT_SHADOW,
               whiteSpace: "nowrap",

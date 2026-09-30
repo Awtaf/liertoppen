@@ -1,31 +1,56 @@
 import { loadFont } from "@remotion/fonts";
 import { staticFile } from "remotion";
 
-// IBM Plex Sans Arabic (SIL Open Font License, see public/fonts/.../OFL.txt),
-// bundled locally so rendering needs no network. Remotion waits for every
-// face to load before rendering a frame. The latin subset covers punctuation
-// such as "…" and ".".
-const FAMILY = "IBM Plex Sans Arabic";
+// Three Arabic typefaces (all SIL Open Font License, bundled in
+// remotion/public/fonts/ so rendering needs no network):
+//   display — Noto Kufi Arabic: geometric and sharp, for the tense first half
+//   serif   — Amiri: classical Naskh, for the calm, emotional second half
+//   body    — IBM Plex Sans Arabic: clean captions and UI
+// Remotion waits for every face to load before rendering a frame. The latin
+// subset covers punctuation such as "…" and ".".
 const ARABIC_RANGE =
   "U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC";
 const LATIN_RANGE =
   "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD";
 
-for (const weight of ["300", "400", "500", "600", "700"]) {
-  for (const [subset, unicodeRange] of [
-    ["arabic", ARABIC_RANGE],
-    ["latin", LATIN_RANGE],
-  ]) {
-    loadFont({
-      family: FAMILY,
-      url: staticFile(`fonts/ibm-plex-sans-arabic/${subset}-${weight}.woff2`),
-      weight,
-      unicodeRange,
-    });
+const FACES = [
+  { family: "IBM Plex Sans Arabic", dir: "ibm-plex-sans-arabic", weights: ["300", "400", "500", "600", "700"] },
+  { family: "Noto Kufi Arabic", dir: "noto-kufi-arabic", weights: ["400", "700", "800", "900"] },
+  { family: "Amiri", dir: "amiri", weights: ["400", "700"] },
+];
+
+for (const face of FACES) {
+  for (const weight of face.weights) {
+    for (const [subset, unicodeRange] of [
+      ["arabic", ARABIC_RANGE],
+      ["latin", LATIN_RANGE],
+    ]) {
+      loadFont({
+        family: face.family,
+        url: staticFile(`fonts/${face.dir}/${subset}-${weight}.woff2`),
+        weight,
+        unicodeRange,
+      });
+    }
   }
 }
 
-export const FONT_FAMILY = `"${FAMILY}", "Noto Sans Arabic", sans-serif`;
+export type FontRole = "body" | "display" | "serif";
+
+export const FONTS: Record<FontRole, string> = {
+  body: `"IBM Plex Sans Arabic", "Noto Sans Arabic", sans-serif`,
+  display: `"Noto Kufi Arabic", "IBM Plex Sans Arabic", sans-serif`,
+  serif: `"Amiri", "IBM Plex Sans Arabic", serif`,
+};
+
+// Default line height per face: Amiri needs more room for its tall letters.
+export const LINE_HEIGHT: Record<FontRole, number> = {
+  body: 1.45,
+  display: 1.5,
+  serif: 1.7,
+};
+
+export const FONT_FAMILY = FONTS.body;
 
 export type Tone = "tense" | "neutral" | "calm";
 

@@ -1,6 +1,6 @@
 import React, { CSSProperties } from "react";
-import { Easing, interpolate, spring, SpringConfig, useCurrentFrame, useVideoConfig } from "remotion";
-import { COLORS, FONT_FAMILY, TEXT_SHADOW, Tone, TONE_ACCENT } from "../theme";
+import { Easing, interpolate, random, spring, SpringConfig, useCurrentFrame, useVideoConfig } from "remotion";
+import { COLORS, FontRole, FONTS, LINE_HEIGHT, TEXT_SHADOW, Tone, TONE_ACCENT } from "../theme";
 import { CLAMP, parseEmphasis } from "../utils";
 
 export type KineticMotion = "rise" | "slam" | "breathe";
@@ -23,6 +23,10 @@ export type KineticTextProps = {
   exitDuration?: number;
   maxWidth?: number;
   lineHeight?: number;
+  // Typeface role: "display" (Kufi), "serif" (Amiri) or "body" (Plex).
+  font?: FontRole;
+  // 0–1: RGB split + jitter, for moments of mental noise.
+  glitch?: number;
   style?: CSSProperties;
 };
 
@@ -59,7 +63,9 @@ export const KineticText: React.FC<KineticTextProps> = ({
   exitAt,
   exitDuration = 10,
   maxWidth = 820,
-  lineHeight = 1.45,
+  lineHeight,
+  font = "body",
+  glitch = 0,
   style,
 }) => {
   const frame = useCurrentFrame();
@@ -90,10 +96,10 @@ export const KineticText: React.FC<KineticTextProps> = ({
         columnGap: fontSize * 0.27,
         rowGap: fontSize * 0.05,
         maxWidth,
-        fontFamily: FONT_FAMILY,
+        fontFamily: FONTS[font],
         fontSize,
         fontWeight: weight,
-        lineHeight,
+        lineHeight: lineHeight ?? LINE_HEIGHT[font],
         color,
         textAlign: "center",
         opacity: 1 - exit,
@@ -121,20 +127,26 @@ export const KineticText: React.FC<KineticTextProps> = ({
           scale *= interpolate(pop, [0, 1], [0.7, 1]);
         }
 
+        // Glitch: chromatic split that flickers, plus occasional horizontal tears.
+        const g = glitch > 0 ? glitch * (0.4 + 0.6 * random(`glitch-${frame}-${i}`)) : 0;
+        const tear = glitch > 0 && random(`tear-${frame}-${i}`) > 0.78 ? (random(`tx-${frame}-${i}`) - 0.5) * glitch * fontSize * 0.35 : 0;
+        const split = g * fontSize * 0.06;
+        const glitchShadow = g > 0 ? `${-split}px 0 rgba(255, 40, 80, 0.75), ${split}px 0 rgba(40, 220, 255, 0.7), ` : "";
+
         return (
           <span
             key={`${word.text}-${i}`}
             style={{
               display: "inline-block",
               opacity,
-              transform: `translateY(${y}px) scale(${scale})`,
+              transform: `translate(${tear}px, ${y}px) scale(${scale})`,
               filter: blur > 0.05 ? `blur(${blur}px)` : undefined,
               fontSize: word.emphasized ? fontSize * emphasisScale : undefined,
               fontWeight: word.emphasized ? 700 : undefined,
               color: word.emphasized ? accent : undefined,
-              textShadow: word.emphasized
-                ? `0 0 ${fontSize * 0.45}px ${accent}66, ${TEXT_SHADOW}`
-                : TEXT_SHADOW,
+              textShadow:
+                glitchShadow +
+                (word.emphasized ? `0 0 ${fontSize * 0.45}px ${accent}66, ${TEXT_SHADOW}` : TEXT_SHADOW),
               whiteSpace: "nowrap",
             }}
           >

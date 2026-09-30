@@ -1,7 +1,7 @@
 import React from "react";
 import { AbsoluteFill } from "remotion";
 import type { Phrase } from "../copy";
-import { SAFE } from "../theme";
+import { FontRole, SAFE } from "../theme";
 import { VoiceLineId, voStagger } from "../timing";
 import { KineticMotion, KineticText } from "./KineticText";
 
@@ -21,6 +21,8 @@ export type ArabicCaptionProps = {
   exit?: boolean;
   // Voiceover line this caption belongs to: words then reveal at its pace.
   voiceLine?: VoiceLineId;
+  font?: FontRole;
+  glitch?: number;
 };
 
 // One synced voiceover phrase, placed inside the Instagram safe zone.
@@ -35,6 +37,8 @@ export const ArabicCaption: React.FC<ArabicCaptionProps> = ({
   delay = 0,
   exit = true,
   voiceLine,
+  font = "body",
+  glitch = 0,
 }) => {
   const wordCount = phrase.text.split(/\s+/).filter(Boolean).length;
   const stagger = voiceLine
@@ -47,7 +51,7 @@ export const ArabicCaption: React.FC<ArabicCaptionProps> = ({
         alignItems: "center",
         justifyContent:
           placement === "lower" ? "flex-end" : placement === "upper" ? "flex-start" : "center",
-        paddingTop: placement === "upper" ? SAFE.top + 40 : 0,
+        paddingTop: placement === "upper" ? SAFE.top + 130 : 0,
         paddingBottom: placement === "lower" ? SAFE.bottom + 20 : 0,
         paddingLeft: SAFE.side,
         paddingRight: SAFE.side,
@@ -64,6 +68,8 @@ export const ArabicCaption: React.FC<ArabicCaptionProps> = ({
         exitAt={exit ? durationInFrames - 12 : undefined}
         exitDuration={10}
         maxWidth={1080 - SAFE.side * 2}
+        font={font}
+        glitch={glitch}
       />
     </AbsoluteFill>
   );

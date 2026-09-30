@@ -1,6 +1,6 @@
 import React from "react";
 import { AbsoluteFill, interpolate, random, useCurrentFrame, useVideoConfig } from "remotion";
-import { COLORS, FONT_FAMILY } from "../theme";
+import { COLORS, FONTS } from "../theme";
 import { CLAMP } from "../utils";
 
 export type TimelineTunnelProps = {
@@ -65,7 +65,7 @@ export const TimelineTunnel: React.FC<TimelineTunnelProps> = ({ labels, duration
         ))}
       </svg>
 
-      <div dir="rtl" lang="ar" style={{ position: "absolute", inset: 0, fontFamily: FONT_FAMILY }}>
+      <div dir="rtl" lang="ar" style={{ position: "absolute", inset: 0, fontFamily: FONTS.display }}>
         {labels.map((label, i) => {
           const z = (i * spacing + travel) % DEPTH;
           const s = project(z);
@@ -84,7 +84,7 @@ export const TimelineTunnel: React.FC<TimelineTunnelProps> = ({ labels, duration
                 top: cy + worldY * s,
                 transform: `translate(-50%, -50%) scale(${s})`,
                 fontSize: 96,
-                fontWeight: i % 3 === 0 ? 600 : 300,
+                fontWeight: i % 3 === 0 ? 700 : 400,
                 color: COLORS.text,
                 opacity,
                 filter: `blur(${blur}px)`,

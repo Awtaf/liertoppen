@@ -263,9 +263,10 @@ const SOUNDS = {
     return normalize(fade(render(T, (t, i) => env(t) * (air[i] + rumble[i] * 3)), 0.005, 0.1));
   },
 
-  // Rising tense drone for 0:03.5–0:09. Ends abruptly (the hard stop).
+  // Rising tense drone under the problem scene. Ends abruptly (the hard stop);
+  // audio.ts trims its start so the end always lands on the hard stop.
   drone: () => {
-    const T = 5.5;
+    const T = 14;
     const voices = [55, 58.27, 82.41, 55.3];
     const raw = render(T, (t) => {
       let s = 0;
@@ -276,9 +277,9 @@ const SOUNDS = {
     return normalize(fade(softclip(lowpass(raw, (t) => 180 + 1500 * (t / T) ** 2), 0.8), 0.25, 0.004));
   },
 
-  // Dry clock ticking, slowly speeding up.
+  // Dry clock ticking, speeding up (trimmed from the start like the drone).
   ticking: () => {
-    const T = 3.6;
+    const T = 10;
     const x = buffer(T);
     let t = 0;
     let n = 0;
@@ -287,7 +288,7 @@ const SOUNDS = {
       const click = render(0.05, (u) => Math.exp(-u * 280) * Math.sin(TAU * f * u));
       mixInto(x, click, t, 1);
       mixInto(x, highpass(noise(0.004, 60 + n), 2500), t, 0.5);
-      t += 0.32 - 0.1 * (t / T);
+      t += 0.36 - 0.2 * (t / T);
       n++;
     }
     return normalize(reverb(x, { wet: 0.12, room: 0.6 }));
@@ -326,9 +327,28 @@ const SOUNDS = {
     return normalize(fade(lowpass(x, (t) => 1600 * (1 - t / T) + 80), 0.002, 0.03));
   },
 
-  // Calm, warm pad in D (0:10 → end). Grows brighter around 0:14.
+  // Riser into the hard stop: filtered noise and a rising tone cluster that
+  // get louder and higher until the very last sample.
+  riser: () => {
+    const T = 5;
+    const air = bandpass(noise(T, 121), (t) => 300 + 6000 * (t / T) ** 2.2, 0.9);
+    const tone = sweep(T, (t) => 110 * 2 ** (2.5 * (t / T) ** 1.5), (t) => (t / T) ** 2.5, (p) => Math.sin(p) + 0.4 * Math.sin(2.01 * p) + 0.25 * Math.sin(3.02 * p));
+    const x = render(T, (t, i) => (t / T) ** 3 * air[i] * 1.4 + tone[i] * 0.5);
+    return normalize(fade(softclip(x, 1.2), 0.2, 0.002));
+  },
+
+  // One soft, deep boom under "توقّف".
+  "sub-boom": () => {
+    const x = buffer(3);
+    mixInto(x, sweep(2.8, (t) => 42 + 20 * Math.exp(-t * 6), (t) => Math.min(1, t / 0.04) * Math.exp(-t * 1.6)), 0, 1);
+    mixInto(x, lowpass(noise(1.2, 131), 180).map((v, i) => v * Math.exp((-i / SR) * 3) * 2), 0, 0.3);
+    return normalize(fade(reverb(x, { wet: 0.3, room: 0.9, damp: 0.6 }), 0.02, 0.8));
+  },
+
+  // Calm, warm pad in D (hard stop → end). Grows brighter ~7 s in, when the
+  // solution starts.
   ambience: () => {
-    const T = 20;
+    const T = 30;
     const r = rng(81);
     const voices = [
       [73.42, 0.9, false],
@@ -340,7 +360,7 @@ const SOUNDS = {
       [659.25, 0.18, true],
     ].map(([f, amp, bright]) => ({ f, amp, bright, lfo: 0.04 + r() * 0.08, ph: r() * TAU }));
     const pad = render(T, (t) => {
-      const warmth = Math.min(1, Math.max(0.25, (t - 3.5) / 2.5));
+      const warmth = Math.min(1, Math.max(0.25, (t - 6.5) / 3));
       let s = 0;
       for (const v of voices) {
         const g = v.amp * (0.7 + 0.3 * Math.sin(TAU * v.lfo * t + v.ph)) * (v.bright ? warmth : 1);
