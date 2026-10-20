@@ -60,6 +60,19 @@
   }
 }
 
+/*
+  Telia Liertoppen ansatt-app (/ansatt) — Telia-inspired purple design
+  tokens, sourced from legacy/Liertoppen's palette. Purely additive to the
+  Østfold Bud Service tokens above; the /ansatt segment is a separate,
+  unrelated feature and does not use the navy/green tokens.
+*/
+@theme {
+  --color-teliapurple: #990ae3;
+  --color-teliapurple-light: #c44dff;
+  --color-teliapurple-dark: #7a08b8;
+  --color-teliapurple-bg: #faf5ff;
+}
+
 html {
   scroll-behavior: smooth;
 }
