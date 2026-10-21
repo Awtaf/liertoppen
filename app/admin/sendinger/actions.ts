@@ -7,6 +7,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { priceShipment, validateCargoAgainstLimit, type ServiceKey } from "@/lib/shipments/pricing";
 import { generateTrackingNumber } from "@/lib/shipments/tracking";
 import { resolveCustomerContext } from "@/lib/customers/context";
+import { notifyDriverOfNewShipment } from "@/lib/shipments/notify";
 import type { ShipmentStatus } from "@/lib/shipments/shipment";
 
 async function requireUser() {
@@ -133,6 +134,22 @@ export async function createShipment(_prevState: string | null, formData: FormDa
   }
 
   await admin.from("shipment_events").insert({ shipment_id: shipment.id, status: "BOOKET" });
+
+  await notifyDriverOfNewShipment({
+    shipmentId: shipment.id,
+    trackingNumber,
+    serviceKey,
+    senderName,
+    senderAddr,
+    senderZip,
+    senderCity,
+    receiverName,
+    receiverAddr,
+    receiverZip,
+    receiverCity,
+    reference,
+    requestedDelivery,
+  });
 
   revalidatePath("/admin/sendinger");
   redirect(`/admin/sendinger/${shipment.id}`);

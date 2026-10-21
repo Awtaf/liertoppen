@@ -37,6 +37,9 @@ export default async function AdminLayout({
               <Link href="/admin/priser" className="hover:text-navy">
                 Priser
               </Link>
+              <Link href="/sjafor" className="hover:text-navy">
+                Sjåfør-app
+              </Link>
             </nav>
           )}
           {user && (

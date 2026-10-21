@@ -9,6 +9,7 @@ import { priceShipment, validateCargoAgainstLimit, type ServiceKey, type Custome
 import { generateTrackingNumber, formatTrackingNumber } from "@/lib/shipments/tracking";
 import { SERVICE_LABELS } from "@/lib/shipments/shipment";
 import { sendAdminNotification } from "@/lib/mailer";
+import { notifyDriverOfNewShipment } from "@/lib/shipments/notify";
 import { companyInfo } from "@/config/company";
 
 export async function portalLogin(_prevState: string | null, formData: FormData) {
@@ -236,6 +237,22 @@ export async function createCustomerShipment(_prevState: string | null, formData
       "",
       `Se sendingen: ${companyInfo.url}/admin/sendinger/${shipment.id}`,
     ].join("\n"),
+  });
+
+  await notifyDriverOfNewShipment({
+    shipmentId: shipment.id,
+    trackingNumber,
+    serviceKey,
+    senderName: customer.name,
+    senderAddr,
+    senderZip,
+    senderCity,
+    receiverName,
+    receiverAddr,
+    receiverZip,
+    receiverCity,
+    reference,
+    requestedDelivery,
   });
 
   revalidatePath("/portal");
