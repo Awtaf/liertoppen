@@ -17,6 +17,8 @@ export const companyInfo = {
   phone: "930 00 401",
   phoneHref: "tel:+4793000401",
   email: "post@ostfoldbud.no",
+  /** Mottaker for sjåfør-varsler (ny sending på ruten) — se app/sjafor. */
+  driverEmail: "lenasersallam@gmail.com",
   organizationNumber: "937 005 857",
   address: "Drammen–Spydeberg",
   postalArea: "Østfold",

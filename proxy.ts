@@ -52,6 +52,16 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  // Sjåfør-appen bruker samme konto som eieren (ingen egen sjåfør-rolle ennå
+  // — se app/sjafor) og gjenbruker derfor /admin/login.
+  if (pathname.startsWith("/sjafor")) {
+    if (!user || isCustomer) {
+      const loginUrl = new URL("/admin/login", request.url);
+      loginUrl.searchParams.set("redirectTo", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
   if (pathname.startsWith("/portal") && !isPublicPortalPath) {
     if (!user || !isCustomer) {
       const loginUrl = new URL("/portal/login", request.url);
@@ -64,5 +74,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/portal/:path*"],
+  matcher: ["/admin/:path*", "/portal/:path*", "/sjafor/:path*"],
 };

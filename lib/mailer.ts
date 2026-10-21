@@ -28,6 +28,8 @@ export async function sendAdminNotification(options: {
   subject: string;
   text: string;
   replyTo?: string;
+  /** Mottaker — standard er companyInfo.email, men f.eks. sjåfør-varsler går til companyInfo.driverEmail. */
+  to?: string;
 }): Promise<boolean> {
   const transporter = getTransporter();
   if (!transporter) {
@@ -39,7 +41,7 @@ export async function sendAdminNotification(options: {
   try {
     await transporter.sendMail({
       from: `"${companyInfo.name}" <${process.env.SMTP_USER}>`,
-      to: companyInfo.email,
+      to: options.to ?? companyInfo.email,
       replyTo: options.replyTo,
       subject: options.subject,
       text: options.text,
