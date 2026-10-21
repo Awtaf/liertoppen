@@ -36,7 +36,7 @@ export default async function SjaforShipmentPage({ params }: { params: Promise<{
   const { data: shipment } = await admin
     .from("shipments")
     .select(
-      "id, tracking_number, sender, receiver, goods, service_key, requested_delivery, status, reference, created_at"
+      "id, tracking_number, sender, receiver, goods, service_key, requested_delivery, status, reference, notes, created_at"
     )
     .eq("id", id)
     .maybeSingle()
@@ -124,6 +124,13 @@ export default async function SjaforShipmentPage({ params }: { params: Promise<{
           )}
         </div>
       </div>
+
+      {shipment.notes && (
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+          <h2 className="text-xs font-bold tracking-wide text-amber-800 uppercase">Leveringsinstruks</h2>
+          <p className="mt-2 text-base text-amber-900">{shipment.notes}</p>
+        </div>
+      )}
 
       <div className="mt-4 rounded-2xl border border-border-light bg-white p-5">
         <h2 className="text-xs font-bold tracking-wide text-slate uppercase">Gods</h2>
