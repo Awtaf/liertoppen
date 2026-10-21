@@ -16,7 +16,11 @@ const SERVICE_OPTIONS: { key: ServiceKey; label: string }[] = [
   { key: "HOURLY", label: "Timepris (dedikert bil)" },
 ];
 
-export function PortalBookingForm() {
+export function PortalBookingForm({
+  fixedSenderAddress,
+}: {
+  fixedSenderAddress?: CustomerRateOverrides["fixedSenderAddress"];
+}) {
   const [error, formAction, isPending] = useActionState(createCustomerShipment, null);
 
   const [serviceKey, setServiceKey] = useState<ServiceKey>("SAMEDAY_ROUTE");
@@ -111,20 +115,30 @@ export function PortalBookingForm() {
       <div className="space-y-6">
         <fieldset className="rounded-2xl border border-border-light bg-white p-6">
           <legend className="px-1 text-xs font-bold tracking-wide text-slate uppercase">Hentested</legend>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <label className={labelClass}>Adresse</label>
-              <input name="senderAddr" required className={inputClass} />
+          {fixedSenderAddress ? (
+            <div className="text-sm text-navy">
+              <p className="font-semibold">{fixedSenderAddress.addr}</p>
+              <p className="text-slate">
+                {fixedSenderAddress.zip} {fixedSenderAddress.city}
+              </p>
+              <p className="mt-2 text-xs text-slate">Fast henteadresse for din konto.</p>
             </div>
-            <div>
-              <label className={labelClass}>Postnummer</label>
-              <input name="senderZip" required inputMode="numeric" maxLength={4} className={inputClass} />
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className={labelClass}>Adresse</label>
+                <input name="senderAddr" required className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass}>Postnummer</label>
+                <input name="senderZip" required inputMode="numeric" maxLength={4} className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass}>Sted</label>
+                <input name="senderCity" required className={inputClass} />
+              </div>
             </div>
-            <div>
-              <label className={labelClass}>Sted</label>
-              <input name="senderCity" required className={inputClass} />
-            </div>
-          </div>
+          )}
         </fieldset>
 
         <fieldset className="rounded-2xl border border-border-light bg-white p-6">

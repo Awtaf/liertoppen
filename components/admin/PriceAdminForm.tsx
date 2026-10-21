@@ -24,6 +24,7 @@ const SERVICE_FIELD_LABELS: Record<string, string> = {
   includedWeightKg: "Vekt inkludert i grunnprisen (kg)",
   extraWeightTierKg: "Vekttrinn for tillegg (kg)",
   extraWeightTierPrice: "Tillegg per påbegynt vekttrinn (kr)",
+  outsideZoneExtraCharge: "Tillegg utenfor definerte soner, i tillegg til Kløfta/Jessheim/Neskollen-prisen (kr)",
 };
 
 export function PriceAdminForm({

@@ -85,9 +85,19 @@ export async function updateCustomerRateOverrides(_prevState: string | null, for
   if (widthCm && String(widthCm).trim() !== "") maxCargo.widthCm = Number(widthCm);
   if (heightCm && String(heightCm).trim() !== "") maxCargo.heightCm = Number(heightCm);
 
+  const fixedSenderAddr = String(formData.get("fixedSenderAddr") ?? "").trim();
+  const fixedSenderZip = String(formData.get("fixedSenderZip") ?? "").trim();
+  const fixedSenderCity = String(formData.get("fixedSenderCity") ?? "").trim();
+  const fixedSenderTel = String(formData.get("fixedSenderTel") ?? "").trim();
+  const fixedSenderAddress: CustomerRateOverrides["fixedSenderAddress"] =
+    fixedSenderAddr && fixedSenderZip && fixedSenderCity
+      ? { addr: fixedSenderAddr, zip: fixedSenderZip, city: fixedSenderCity, tel: fixedSenderTel || undefined }
+      : undefined;
+
   const rateOverrides: CustomerRateOverrides = {
     ...(Object.keys(sameDayRouteZonePerStop).length > 0 ? { sameDayRouteZonePerStop } : {}),
     ...(Object.keys(maxCargo).length > 0 ? { maxCargo } : {}),
+    ...(fixedSenderAddress ? { fixedSenderAddress } : {}),
   };
 
   const admin = createSupabaseAdminClient();

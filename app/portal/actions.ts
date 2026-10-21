@@ -134,9 +134,13 @@ export async function createCustomerShipment(_prevState: string | null, formData
   const receiverZip = String(formData.get("receiverZip") ?? "").trim();
   const receiverCity = String(formData.get("receiverCity") ?? "").trim();
   const receiverTel = String(formData.get("receiverTel") ?? "").trim();
-  const senderAddr = String(formData.get("senderAddr") ?? "").trim();
-  const senderZip = String(formData.get("senderZip") ?? "").trim();
-  const senderCity = String(formData.get("senderCity") ?? "").trim();
+  // Kunder med en fast henteadresse (customer.rate_overrides.fixedSenderAddress)
+  // skal aldri kunne overstyre den via skjemadata — serveren bruker alltid
+  // den lagrede adressen i stedet for det som evt. ble sendt inn.
+  const fixedSender = customer.rate_overrides?.fixedSenderAddress;
+  const senderAddr = fixedSender ? fixedSender.addr : String(formData.get("senderAddr") ?? "").trim();
+  const senderZip = fixedSender ? fixedSender.zip : String(formData.get("senderZip") ?? "").trim();
+  const senderCity = fixedSender ? fixedSender.city : String(formData.get("senderCity") ?? "").trim();
   const colli = Number(formData.get("colli") ?? 1);
   const weightKg = Number(formData.get("weightKg") ?? 0);
   const lengthCm = Number(formData.get("lengthCm") ?? 0) || undefined;
@@ -193,7 +197,13 @@ export async function createCustomerShipment(_prevState: string | null, formData
     .insert({
       tracking_number: trackingNumber,
       customer_id: customer.id,
-      sender: { name: customer.name, addr: senderAddr, zip: senderZip, city: senderCity, tel: customer.phone ?? "" },
+      sender: {
+        name: customer.name,
+        addr: senderAddr,
+        zip: senderZip,
+        city: senderCity,
+        tel: fixedSender?.tel ?? customer.phone ?? "",
+      },
       receiver: { name: receiverName, addr: receiverAddr, zip: receiverZip, city: receiverCity, tel: receiverTel },
       goods: {
         colli,

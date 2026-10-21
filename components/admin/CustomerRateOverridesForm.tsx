@@ -50,6 +50,48 @@ export function CustomerRateOverridesForm({
       </div>
 
       <div>
+        <p className="text-xs font-semibold tracking-wide text-slate uppercase">Fast henteadresse</p>
+        <p className="mt-1 text-xs text-slate">
+          Hvis satt, trenger ikke kunden å skrive inn henteadresse ved booking — denne brukes alltid. Blank adresse =
+          kunden skriver inn selv som normalt.
+        </p>
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-4">
+          <div className="sm:col-span-2">
+            <label className={labelClass}>Adresse</label>
+            <input
+              name="fixedSenderAddr"
+              defaultValue={rateOverrides.fixedSenderAddress?.addr ?? ""}
+              className="w-full rounded-lg border border-border-light bg-bg-light px-2.5 py-1.5 text-sm text-navy focus:border-green focus:bg-white focus-visible:outline-none"
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Postnummer</label>
+            <input
+              name="fixedSenderZip"
+              defaultValue={rateOverrides.fixedSenderAddress?.zip ?? ""}
+              className="w-full rounded-lg border border-border-light bg-bg-light px-2.5 py-1.5 text-sm text-navy focus:border-green focus:bg-white focus-visible:outline-none"
+            />
+          </div>
+          <div>
+            <label className={labelClass}>Sted</label>
+            <input
+              name="fixedSenderCity"
+              defaultValue={rateOverrides.fixedSenderAddress?.city ?? ""}
+              className="w-full rounded-lg border border-border-light bg-bg-light px-2.5 py-1.5 text-sm text-navy focus:border-green focus:bg-white focus-visible:outline-none"
+            />
+          </div>
+          <div className="sm:col-span-4">
+            <label className={labelClass}>Telefon (valgfritt)</label>
+            <input
+              name="fixedSenderTel"
+              defaultValue={rateOverrides.fixedSenderAddress?.tel ?? ""}
+              className="w-full max-w-xs rounded-lg border border-border-light bg-bg-light px-2.5 py-1.5 text-sm text-navy focus:border-green focus:bg-white focus-visible:outline-none"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div>
         <p className="text-xs font-semibold tracking-wide text-slate uppercase">Kjøretøybegrensning</p>
         <p className="mt-1 text-xs text-slate">
           Sett dette hvis kundens sendinger kun kjøres med ett bestemt kjøretøy. Blank = ingen begrensning.
