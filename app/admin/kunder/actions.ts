@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
@@ -15,6 +16,40 @@ async function requireUser() {
   if (!user) {
     throw new Error("Ikke innlogget.");
   }
+}
+
+/** Oppretter en kunde uten at det må finnes et lead eller en sending først —
+ * for kunder som skal logge inn og booke selv fra dag én. */
+export async function createCustomer(_prevState: string | null, formData: FormData) {
+  await requireUser();
+
+  const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const phone = String(formData.get("phone") ?? "").trim();
+
+  if (!name || !email) {
+    return "Navn og e-post er påkrevd.";
+  }
+
+  const admin = createSupabaseAdminClient();
+
+  const { data: existing } = await admin.from("customers").select("id").eq("email", email).maybeSingle();
+  if (existing) {
+    redirect(`/admin/kunder/${existing.id}`);
+  }
+
+  const { data: created, error } = await admin
+    .from("customers")
+    .insert({ name, email, phone: phone || null })
+    .select("id")
+    .single();
+  if (error || !created) {
+    console.error("Kunne ikke opprette kunde:", error);
+    return "Kunne ikke opprette kunde.";
+  }
+
+  revalidatePath("/admin/kunder");
+  redirect(`/admin/kunder/${created.id}`);
 }
 
 export async function generateOnboardingLink(customerId: string): Promise<string> {

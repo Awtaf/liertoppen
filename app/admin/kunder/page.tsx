@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { NewCustomerForm } from "@/components/admin/NewCustomerForm";
 
 export const metadata: Metadata = {
   title: "Kunder",
@@ -59,8 +60,13 @@ export default async function CustomersPage() {
       <div>
         <h1 className="text-2xl font-bold text-navy">Kunder</h1>
         <p className="mt-1 text-sm text-slate">
-          Alle kunder — fra tilbudsforespørsler og bookede sendinger. Send onboarding-lenke fra en kundes side når dere er blitt enige.
+          Alle kunder — fra tilbudsforespørsler, bookede sendinger, eller lagt til manuelt under. Send onboarding-lenke fra
+          en kundes side når dere er blitt enige.
         </p>
+      </div>
+
+      <div className="mt-6">
+        <NewCustomerForm />
       </div>
 
       {error && <p className="mt-6 text-sm text-red-600">Kunne ikke hente kunder: {error.message}</p>}
