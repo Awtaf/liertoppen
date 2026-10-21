@@ -19,6 +19,11 @@ const SERVICE_FIELD_LABELS: Record<string, string> = {
   minHours: "Minimum timer",
   fullDayHours: "Timer for dagsleie",
   fullDayPrice: "Dagsleie (kr)",
+  osloLillestromBasePrice: "Grunnpris Oslo / Lillestrøm (kr)",
+  kloftaJessheimNeskollenBasePrice: "Grunnpris Kløfta / Jessheim / Neskollen (kr)",
+  includedWeightKg: "Vekt inkludert i grunnprisen (kg)",
+  extraWeightTierKg: "Vekttrinn for tillegg (kg)",
+  extraWeightTierPrice: "Tillegg per påbegynt vekttrinn (kr)",
 };
 
 export function PriceAdminForm({

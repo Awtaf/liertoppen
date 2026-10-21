@@ -65,7 +65,16 @@ export function Header() {
             ))}
           </nav>
 
-          <div className="hidden lg:block">
+          <div className="hidden items-center gap-5 lg:flex">
+            <Link
+              href="/portal/login"
+              className={cn(
+                "text-sm font-medium transition-colors hover:text-green",
+                solid ? "text-navy" : "text-white"
+              )}
+            >
+              Logg inn
+            </Link>
             <Button href="/#kontakt" size="md">
               Bli samarbeidspartner
             </Button>

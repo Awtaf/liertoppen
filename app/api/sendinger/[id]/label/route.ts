@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { generateLabelPdf } from "@/lib/shipments/label";
+import { generateLabelPdf, generateLabelPdfA4 } from "@/lib/shipments/label";
 import type { Shipment } from "@/lib/shipments/shipment";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createSupabaseServerClient();
@@ -17,6 +17,7 @@ export async function GET(
   }
 
   const { id } = await params;
+  const format = new URL(request.url).searchParams.get("format") === "a4" ? "a4" : "thermal";
   const admin = createSupabaseAdminClient();
   const { data: shipment } = await admin
     .from("shipments")
@@ -40,12 +41,18 @@ export async function GET(
     }
   }
 
-  const pdfBytes = await generateLabelPdf(shipment);
+  let pdfBytes: Uint8Array;
+  try {
+    pdfBytes = format === "a4" ? await generateLabelPdfA4(shipment) : await generateLabelPdf(shipment);
+  } catch (error) {
+    console.error("Kunne ikke generere fraktlapp:", error);
+    return NextResponse.json({ message: "Kunne ikke generere fraktlapp." }, { status: 500 });
+  }
 
   return new NextResponse(Buffer.from(pdfBytes), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="fraktlapp-${shipment.tracking_number}.pdf"`,
+      "Content-Disposition": `inline; filename="fraktlapp-${shipment.tracking_number}${format === "a4" ? "-a4" : ""}.pdf"`,
       "Cache-Control": "no-store",
     },
   });

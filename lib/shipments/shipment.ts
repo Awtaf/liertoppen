@@ -70,6 +70,9 @@ export type ShipmentParty = {
 export type ShipmentGoodsSnapshot = {
   colli: number;
   weightKg: number;
+  lengthCm?: number;
+  widthCm?: number;
+  heightCm?: number;
   pallets?: number;
   hours?: number;
 };
@@ -114,6 +117,7 @@ export type PublicShipmentStatus = {
 };
 
 export const SERVICE_LABELS: Record<ServiceKey, string> = {
+  PAKKE: "Pakkelevering",
   EXPRESS: "Bud / ekspress",
   SAMEDAY_ROUTE: "Fast distribusjon",
   PALLET: "Pallegods",

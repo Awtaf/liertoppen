@@ -7,7 +7,7 @@ export type Stat = {
 };
 
 export const stats: Stat[] = [
-  { label: "2 kjøretøy i bilparken", icon: Truck },
+  { label: "3 kjøretøy i bilparken", icon: Truck },
   { label: "Flere kjøretøy kommer snart", icon: PackagePlus },
   { label: "Kapasitet for faste oppdrag", icon: CalendarClock },
   { label: "Fleksible transportløsninger", icon: SlidersHorizontal },

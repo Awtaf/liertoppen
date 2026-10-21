@@ -85,6 +85,15 @@ export default async function PortalShipmentPage({
             <Printer aria-hidden className="h-4 w-4" />
             Fraktlapp
           </a>
+          <a
+            href={`/api/sendinger/${shipment.id}/label?format=a4`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border-light bg-white px-4 py-2.5 text-sm font-semibold text-navy hover:border-green hover:text-green"
+          >
+            <Printer aria-hidden className="h-4 w-4" />
+            Fraktlapp (A4)
+          </a>
           <span className={`inline-flex rounded-full px-3 py-1.5 text-xs font-semibold ${STATUS_STYLES[shipment.status]}`}>
             {STATUS_LABELS[shipment.status]}
           </span>
@@ -114,6 +123,18 @@ export default async function PortalShipmentPage({
               <dt className="text-slate">Kolli</dt>
               <dd className="font-medium text-navy">{shipment.goods.colli}</dd>
             </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-slate">Vekt</dt>
+              <dd className="font-medium text-navy">{shipment.goods.weightKg} kg</dd>
+            </div>
+            {shipment.goods.lengthCm && shipment.goods.widthCm && shipment.goods.heightCm && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate">Mål</dt>
+                <dd className="font-medium text-navy">
+                  {shipment.goods.lengthCm} × {shipment.goods.widthCm} × {shipment.goods.heightCm} cm
+                </dd>
+              </div>
+            )}
             {shipment.requested_delivery && (
               <div className="flex justify-between gap-4">
                 <dt className="text-slate">Ønsket levering</dt>

@@ -2,13 +2,14 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { createShipment } from "@/app/admin/sendinger/actions";
-import type { ServiceKey, ShipmentPriceResult } from "@/lib/shipments/pricing";
+import type { ServiceKey, ShipmentPriceResult, CustomerRateOverrides } from "@/lib/shipments/pricing";
 
 const inputClass =
   "w-full rounded-lg border border-border-light bg-bg-light px-3 py-2 text-sm text-navy focus:border-green focus:bg-white focus-visible:outline-none";
 const labelClass = "mb-1.5 block text-xs font-semibold text-navy";
 
 const SERVICE_OPTIONS: { key: ServiceKey; label: string }[] = [
+  { key: "PAKKE", label: "Pakkelevering (fast pris per adresse)" },
   { key: "EXPRESS", label: "Bud / ekspress (direktekjøring A→B)" },
   { key: "SAMEDAY_ROUTE", label: "Fast distribusjon (samlast på rute)" },
   { key: "PALLET", label: "Pallegods (EUR-pall)" },
@@ -19,7 +20,12 @@ export function ShipmentBookingForm() {
   const [error, formAction, isPending] = useActionState(createShipment, null);
 
   const [serviceKey, setServiceKey] = useState<ServiceKey>("SAMEDAY_ROUTE");
+  const [customerEmail, setCustomerEmail] = useState("");
   const [receiverZip, setReceiverZip] = useState("");
+  const [weightKg, setWeightKg] = useState(0);
+  const [lengthCm, setLengthCm] = useState<number | "">("");
+  const [widthCm, setWidthCm] = useState<number | "">("");
+  const [heightCm, setHeightCm] = useState<number | "">("");
   const [pallets, setPallets] = useState(1);
   const [hours, setHours] = useState(2);
   const [extraKm, setExtraKm] = useState(0);
@@ -30,6 +36,8 @@ export function ShipmentBookingForm() {
 
   const [price, setPrice] = useState<ShipmentPriceResult | null>(null);
   const [priceError, setPriceError] = useState<string | null>(null);
+  const [maxCargo, setMaxCargo] = useState<CustomerRateOverrides["maxCargo"] | null>(null);
+  const [cargoError, setCargoError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -37,6 +45,8 @@ export function ShipmentBookingForm() {
       if (receiverZip.trim().length !== 4) {
         setPrice(null);
         setPriceError(null);
+        setMaxCargo(null);
+        setCargoError(null);
         return;
       }
       fetch("/api/sendinger/quote", {
@@ -53,6 +63,11 @@ export function ShipmentBookingForm() {
           eveningWeekend,
           night,
           carry,
+          weightKg,
+          lengthCm: lengthCm || undefined,
+          widthCm: widthCm || undefined,
+          heightCm: heightCm || undefined,
+          customerEmail: customerEmail || undefined,
         }),
       })
         .then(async (res) => {
@@ -65,6 +80,8 @@ export function ShipmentBookingForm() {
         .then((data) => {
           setPrice(data.price);
           setPriceError(null);
+          setMaxCargo(data.maxCargo ?? null);
+          setCargoError(data.cargoError ?? null);
         })
         .catch((err) => {
           if (err.name === "AbortError") return;
@@ -76,7 +93,22 @@ export function ShipmentBookingForm() {
       clearTimeout(timeout);
       controller.abort();
     };
-  }, [serviceKey, receiverZip, pallets, hours, extraKm, expressGuarantee, eveningWeekend, night, carry]);
+  }, [
+    serviceKey,
+    receiverZip,
+    pallets,
+    hours,
+    extraKm,
+    expressGuarantee,
+    eveningWeekend,
+    night,
+    carry,
+    weightKg,
+    lengthCm,
+    widthCm,
+    heightCm,
+    customerEmail,
+  ]);
 
   return (
     <form action={formAction} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -106,7 +138,16 @@ export function ShipmentBookingForm() {
             </div>
             <div className="sm:col-span-2">
               <label className={labelClass}>Kundens e-post (for oppslag/opprettelse i kunderegisteret)</label>
-              <input name="customerEmail" type="email" className={inputClass} />
+              <input
+                name="customerEmail"
+                type="email"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                className={inputClass}
+              />
+              <p className="mt-1 text-xs text-slate">
+                Finnes kunden allerede med en avtalt kundepris eller kjøretøybegrensning, brukes den automatisk.
+              </p>
             </div>
           </div>
         </fieldset>
@@ -169,7 +210,47 @@ export function ShipmentBookingForm() {
             </div>
             <div>
               <label className={labelClass}>Vekt (kg)</label>
-              <input name="weightKg" type="number" min={0} defaultValue={0} className={inputClass} />
+              <input
+                name="weightKg"
+                type="number"
+                min={0}
+                value={weightKg}
+                onChange={(e) => setWeightKg(Number(e.target.value))}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Lengde (cm)</label>
+              <input
+                name="lengthCm"
+                type="number"
+                min={0}
+                value={lengthCm}
+                onChange={(e) => setLengthCm(e.target.value === "" ? "" : Number(e.target.value))}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Bredde (cm)</label>
+              <input
+                name="widthCm"
+                type="number"
+                min={0}
+                value={widthCm}
+                onChange={(e) => setWidthCm(e.target.value === "" ? "" : Number(e.target.value))}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Høyde (cm)</label>
+              <input
+                name="heightCm"
+                type="number"
+                min={0}
+                value={heightCm}
+                onChange={(e) => setHeightCm(e.target.value === "" ? "" : Number(e.target.value))}
+                className={inputClass}
+              />
             </div>
             {serviceKey === "PALLET" && (
               <div>
@@ -220,34 +301,36 @@ export function ShipmentBookingForm() {
             </div>
           </div>
 
-          <div className="mt-4 space-y-2 border-t border-border-light pt-4">
-            <label className="flex items-center gap-2 text-sm text-navy">
-              <input
-                type="checkbox"
-                name="expressGuarantee"
-                checked={expressGuarantee}
-                onChange={(e) => setExpressGuarantee(e.target.checked)}
-              />
-              Garantert innen 1–2 timer (+50 %)
-            </label>
-            <label className="flex items-center gap-2 text-sm text-navy">
-              <input
-                type="checkbox"
-                name="eveningWeekend"
-                checked={eveningWeekend}
-                onChange={(e) => setEveningWeekend(e.target.checked)}
-              />
-              Kveld (16–22) eller helg (+40 %)
-            </label>
-            <label className="flex items-center gap-2 text-sm text-navy">
-              <input type="checkbox" name="night" checked={night} onChange={(e) => setNight(e.target.checked)} />
-              Natt (+60 %)
-            </label>
-            <label className="flex items-center gap-2 text-sm text-navy">
-              <input type="checkbox" name="carry" checked={carry} onChange={(e) => setCarry(e.target.checked)} />
-              Bæring / etasjer / to mann
-            </label>
-          </div>
+          {serviceKey !== "PAKKE" && (
+            <div className="mt-4 space-y-2 border-t border-border-light pt-4">
+              <label className="flex items-center gap-2 text-sm text-navy">
+                <input
+                  type="checkbox"
+                  name="expressGuarantee"
+                  checked={expressGuarantee}
+                  onChange={(e) => setExpressGuarantee(e.target.checked)}
+                />
+                Garantert innen 1–2 timer (+50 %)
+              </label>
+              <label className="flex items-center gap-2 text-sm text-navy">
+                <input
+                  type="checkbox"
+                  name="eveningWeekend"
+                  checked={eveningWeekend}
+                  onChange={(e) => setEveningWeekend(e.target.checked)}
+                />
+                Kveld (16–22) eller helg (+40 %)
+              </label>
+              <label className="flex items-center gap-2 text-sm text-navy">
+                <input type="checkbox" name="night" checked={night} onChange={(e) => setNight(e.target.checked)} />
+                Natt (+60 %)
+              </label>
+              <label className="flex items-center gap-2 text-sm text-navy">
+                <input type="checkbox" name="carry" checked={carry} onChange={(e) => setCarry(e.target.checked)} />
+                Bæring / etasjer / to mann
+              </label>
+            </div>
+          )}
         </fieldset>
       </div>
 
@@ -255,16 +338,42 @@ export function ShipmentBookingForm() {
         <div className="sticky top-6 rounded-2xl border border-border-light bg-white p-6">
           <h2 className="text-sm font-bold tracking-wide text-navy uppercase">Pris — beregnes live</h2>
 
+          {maxCargo && (
+            <p className="mt-3 rounded-lg border border-border-light bg-bg-light px-3 py-2 text-xs text-slate">
+              Denne kunden er begrenset til{" "}
+              {[
+                maxCargo.weightKg && `${maxCargo.weightKg} kg`,
+                maxCargo.lengthCm && maxCargo.widthCm && maxCargo.heightCm
+                  ? `${maxCargo.lengthCm}×${maxCargo.widthCm}×${maxCargo.heightCm} cm`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" / ")}{" "}
+              (kjøretøykapasitet).
+            </p>
+          )}
+          {cargoError && (
+            <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{cargoError}</p>
+          )}
+
           {!price && !priceError && (
             <p className="mt-4 text-sm text-slate">Fyll inn mottakers postnummer for å se pris.</p>
           )}
           {priceError && <p className="mt-4 text-sm text-red-600">{priceError}</p>}
 
-          {price && (
+          {price && price.coverageError && (
+            <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {price.coverageError}
+            </p>
+          )}
+
+          {price && !price.coverageError && (
             <>
-              <p className="mt-2 text-sm font-medium text-navy">
-                {price.zone ? price.zone.name : "Utenfor definerte soner"}
-              </p>
+              {serviceKey !== "PAKKE" && (
+                <p className="mt-2 text-sm font-medium text-navy">
+                  {price.zone ? price.zone.name : "Utenfor definerte soner"}
+                </p>
+              )}
               <div className="mt-4 space-y-1.5 rounded-xl border border-border-light bg-bg-light p-4 text-sm">
                 {price.lines.map((line, i) => (
                   <div key={i} className="flex justify-between gap-4">
@@ -288,7 +397,7 @@ export function ShipmentBookingForm() {
 
           <button
             type="submit"
-            disabled={isPending || !price}
+            disabled={isPending || !price || Boolean(cargoError) || Boolean(price?.coverageError)}
             className="mt-6 w-full rounded-lg bg-green px-5 py-3 text-sm font-semibold text-navy hover:bg-green/90 disabled:opacity-60"
           >
             {isPending ? "Booker…" : "Bekreft booking"}

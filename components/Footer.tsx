@@ -60,6 +60,11 @@ export function Footer() {
                 <MapPin aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-green" />
                 {companyInfo.address}
               </li>
+              <li>
+                <Link href="/portal/login" className="text-sm font-semibold text-white hover:text-green">
+                  Logg inn som kunde →
+                </Link>
+              </li>
             </ul>
           </div>
         </div>

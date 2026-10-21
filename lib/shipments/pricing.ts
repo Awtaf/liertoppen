@@ -9,7 +9,7 @@
 // =============================================================================
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
-export type ServiceKey = "EXPRESS" | "SAMEDAY_ROUTE" | "PALLET" | "HOURLY";
+export type ServiceKey = "EXPRESS" | "SAMEDAY_ROUTE" | "PALLET" | "HOURLY" | "PAKKE";
 
 export type Zone = {
   id: string;
@@ -39,6 +39,8 @@ export type PriceLine = { label: string; amountExMva: number };
 export type ShipmentGoods = {
   pallets?: number;
   hours?: number;
+  /** Totalvekt for sendingen — brukt av Pakkelevering sitt vekttillegg. */
+  weightKg?: number;
   /** Manuelt anslåtte km utover sonegrensen, kun brukt for EXPRESS utenfor sone. */
   extraKmOutsideZone?: number;
 };
@@ -57,7 +59,54 @@ export type ShipmentPriceResult = {
   mvaRate: number;
   mva: number;
   totalIncMva: number;
+  /** Satt når adressen faller utenfor et avgrenset dekningsområde (f.eks.
+   * Pakkelevering) — pris er ikke beregnet, og booking skal blokkeres. */
+  coverageError?: string;
 };
+
+/** Privat avtale for én kunde — se supabase/migrations/0004_customer_rate_overrides.sql. */
+export type CustomerRateOverrides = {
+  /** Sonekode (som streng, siden det er en jsonb-nøkkel) -> avtalt pris per stopp for "Fast distribusjon". */
+  sameDayRouteZonePerStop?: Record<string, number>;
+  /** Sendinger for denne kunden skal ikke overstige dette — typisk fordi de kun kjøres med ett bestemt kjøretøy. */
+  maxCargo?: {
+    weightKg?: number;
+    lengthCm?: number;
+    widthCm?: number;
+    heightCm?: number;
+  };
+};
+
+export async function fetchCustomerRateOverrides(customerId: string): Promise<CustomerRateOverrides> {
+  const admin = createSupabaseAdminClient();
+  const { data, error } = await admin.from("customers").select("rate_overrides").eq("id", customerId).maybeSingle();
+  if (error) throw new Error("Kunne ikke hente kundeavtale: " + error.message);
+  return (data?.rate_overrides as CustomerRateOverrides) ?? {};
+}
+
+/** Sjekker gods mot en eventuell kjøretøybegrensning for kunden. Returnerer en
+ * lesbar feilmelding hvis noe overstiger grensen, ellers null. */
+export function validateCargoAgainstLimit(
+  goods: { weightKg?: number; lengthCm?: number; widthCm?: number; heightCm?: number },
+  maxCargo: CustomerRateOverrides["maxCargo"] | undefined
+): string | null {
+  if (!maxCargo) return null;
+  const problems: string[] = [];
+  if (maxCargo.weightKg !== undefined && goods.weightKg !== undefined && goods.weightKg > maxCargo.weightKg) {
+    problems.push(`vekt (${goods.weightKg} kg, maks ${maxCargo.weightKg} kg)`);
+  }
+  if (maxCargo.lengthCm !== undefined && goods.lengthCm !== undefined && goods.lengthCm > maxCargo.lengthCm) {
+    problems.push(`lengde (${goods.lengthCm} cm, maks ${maxCargo.lengthCm} cm)`);
+  }
+  if (maxCargo.widthCm !== undefined && goods.widthCm !== undefined && goods.widthCm > maxCargo.widthCm) {
+    problems.push(`bredde (${goods.widthCm} cm, maks ${maxCargo.widthCm} cm)`);
+  }
+  if (maxCargo.heightCm !== undefined && goods.heightCm !== undefined && goods.heightCm > maxCargo.heightCm) {
+    problems.push(`høyde (${goods.heightCm} cm, maks ${maxCargo.heightCm} cm)`);
+  }
+  if (problems.length === 0) return null;
+  return `Sendingen er for stor for kjøretøyet som brukes til leveringene dine — ${problems.join(", ")}.`;
+}
 
 const MVA_RATE = 0.25;
 
@@ -104,11 +153,47 @@ export function resolveZone(zones: Zone[], postnr: string): Zone | null {
   );
 }
 
+/**
+ * Dekningsområdet for "Pakkelevering" — strukturell geografi, ikke noe
+ * admin trenger å endre i hverdagen (prisene, derimot, redigeres i
+ * /admin/priser, se services.config). Postnumrene er research av reelle
+ * tettsteder: Lillestrøm 2000-2008/2012/2028, Kløfta 2040-2041, Jessheim
+ * 2050-2069, Neskollen (Hvam) 2165-2167.
+ */
+const PAKKE_ZONES = [
+  {
+    name: "Oslo / Lillestrøm",
+    postnrRanges: [
+      [1, 999],
+      [2000, 2008],
+      [2012, 2012],
+      [2028, 2028],
+    ] as [number, number][],
+    configKey: "osloLillestromBasePrice",
+  },
+  {
+    name: "Kløfta / Jessheim / Neskollen",
+    postnrRanges: [
+      [2040, 2041],
+      [2050, 2069],
+      [2165, 2167],
+    ] as [number, number][],
+    configKey: "kloftaJessheimNeskollenBasePrice",
+  },
+];
+
+function resolvePakkeZone(postnr: string): (typeof PAKKE_ZONES)[number] | null {
+  const zip = parseInt(postnr, 10);
+  if (!Number.isFinite(zip)) return null;
+  return PAKKE_ZONES.find((zone) => zone.postnrRanges.some(([min, max]) => zip >= min && zip <= max)) ?? null;
+}
+
 export async function priceShipment(input: {
   serviceKey: ServiceKey;
   postnr: string;
   goods?: ShipmentGoods;
   surcharges?: SurchargeSelection;
+  rateOverrides?: CustomerRateOverrides;
 }): Promise<ShipmentPriceResult> {
   const [zones, services, surchargeRates] = await Promise.all([
     fetchZones(),
@@ -120,8 +205,61 @@ export async function priceShipment(input: {
   if (!service) {
     throw new Error(`Ukjent tjeneste: ${input.serviceKey}`);
   }
-  const zone = resolveZone(zones, input.postnr);
   const cfg = service.config;
+
+  // Pakkelevering har sitt eget, enkle dekningsområde (se PAKKE_ZONES) —
+  // helt uavhengig av den generelle zones-tabellen som styrer ekspress/fast
+  // distribusjon/pallegods. Utenfor det området finnes det ingen gyldig
+  // pris, så vi returnerer tidlig med en tydelig feil i stedet for å late
+  // som vi har beregnet noe.
+  if (input.serviceKey === "PAKKE") {
+    const pakkeZone = resolvePakkeZone(input.postnr);
+    if (!pakkeZone) {
+      return {
+        zone: null,
+        lines: [],
+        subtotalExMva: 0,
+        mvaRate: MVA_RATE,
+        mva: 0,
+        totalIncMva: 0,
+        coverageError: "Denne adressen dekkes ikke av Pakkelevering ennå. Ta kontakt med oss for et tilbud.",
+      };
+    }
+
+    const basePrice = cfg[pakkeZone.configKey] ?? 0;
+    const included = cfg.includedWeightKg ?? 15;
+    const tierKg = cfg.extraWeightTierKg ?? 15;
+    const tierPrice = cfg.extraWeightTierPrice ?? 0;
+    const weightKg = Math.max(0, input.goods?.weightKg ?? 0);
+
+    const lines: PriceLine[] = [
+      { label: `Grunnpris, ${pakkeZone.name} (inkl. ${included} kg)`, amountExMva: basePrice },
+    ];
+    let subtotal = basePrice;
+
+    if (weightKg > included && tierKg > 0) {
+      const extraKg = weightKg - included;
+      const extraTiers = Math.ceil(extraKg / tierKg);
+      const extraCost = extraTiers * tierPrice;
+      lines.push({
+        label: `Vekttillegg (${weightKg} kg, ${extraTiers} × påbegynt ${tierKg} kg à ${tierPrice} kr)`,
+        amountExMva: extraCost,
+      });
+      subtotal += extraCost;
+    }
+
+    const mva = Math.round(subtotal * MVA_RATE);
+    return {
+      zone: null,
+      lines,
+      subtotalExMva: Math.round(subtotal),
+      mvaRate: MVA_RATE,
+      mva,
+      totalIncMva: Math.round(subtotal) + mva,
+    };
+  }
+
+  const zone = resolveZone(zones, input.postnr);
 
   const lines: PriceLine[] = [];
   let subtotal = 0;
@@ -149,9 +287,15 @@ export async function priceShipment(input: {
       }
     }
   } else if (input.serviceKey === "SAMEDAY_ROUTE") {
-    const perStop = zone?.per_stop_price ?? cfg.fallbackPerStopPrice ?? 0;
+    const override = zone
+      ? input.rateOverrides?.sameDayRouteZonePerStop?.[String(zone.code)]
+      : undefined;
+    const perStop = override ?? zone?.per_stop_price ?? cfg.fallbackPerStopPrice ?? 0;
     lines.push({
-      label: `Pris per stopp, ${zone ? zone.name : "utenfor sone"}`,
+      label:
+        override !== undefined
+          ? `Pris per stopp (avtalt kundepris), ${zone!.name}`
+          : `Pris per stopp, ${zone ? zone.name : "utenfor sone"}`,
       amountExMva: perStop,
     });
     subtotal += perStop;

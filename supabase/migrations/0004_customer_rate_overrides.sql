@@ -1,0 +1,12 @@
+-- Østfold Bud Service — kundespesifikke avtalepriser og kjøretøybegrensning.
+--
+-- Noen kunder har en privat avtale (f.eks. en fast pris per stopp for én
+-- sone) og/eller sendinger som er begrenset til ett bestemt kjøretøys
+-- lastekapasitet. Dette lever per kunde, ikke i den generelle prismotoren.
+--
+-- Format på rate_overrides (alle felt valgfrie):
+-- {
+--   "sameDayRouteZonePerStop": { "4": 120 },   -- sonekode -> avtalt pris/stopp
+--   "maxCargo": { "weightKg": 745, "lengthCm": 220, "widthCm": 123, "heightCm": 128 }
+-- }
+alter table customers add column if not exists rate_overrides jsonb not null default '{}'::jsonb;

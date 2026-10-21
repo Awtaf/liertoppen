@@ -5,8 +5,10 @@ import { ArrowLeft } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { GenerateInviteButton } from "@/components/admin/GenerateInviteButton";
+import { CustomerRateOverridesForm } from "@/components/admin/CustomerRateOverridesForm";
 import { STATUS_STYLES as LEAD_STATUS_STYLES } from "@/lib/leads";
 import { STATUS_STYLES as SHIPMENT_STATUS_STYLES, STATUS_LABELS, SERVICE_LABELS } from "@/lib/shipments/shipment";
+import { fetchZones, type CustomerRateOverrides } from "@/lib/shipments/pricing";
 import { formatTrackingNumber } from "@/lib/shipments/tracking";
 
 export const metadata: Metadata = {
@@ -31,8 +33,12 @@ export default async function CustomerDetailPage({
   }
 
   const admin = createSupabaseAdminClient();
-  const [{ data: customer }, { data: leads }, { data: shipments }] = await Promise.all([
-    admin.from("customers").select("id, name, email, phone, user_id, created_at").eq("id", id).maybeSingle(),
+  const [{ data: customer }, { data: leads }, { data: shipments }, zones] = await Promise.all([
+    admin
+      .from("customers")
+      .select("id, name, email, phone, user_id, rate_overrides, created_at")
+      .eq("id", id)
+      .maybeSingle(),
     admin
       .from("leads")
       .select("id, created_at, pickup_address, delivery_address, service_type, price_estimate, status")
@@ -43,6 +49,7 @@ export default async function CustomerDetailPage({
       .select("id, tracking_number, service_key, status, price_inc_mva, created_at")
       .eq("customer_id", id)
       .order("created_at", { ascending: false }),
+    fetchZones(),
   ]);
 
   if (!customer) {
@@ -81,6 +88,18 @@ export default async function CustomerDetailPage({
             </div>
           </>
         )}
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-border-light bg-white p-6">
+        <h2 className="text-sm font-bold tracking-wide text-navy uppercase">Avtale</h2>
+        <p className="mt-1 text-xs text-slate">Privat prisavtale og eventuell kjøretøybegrensning for denne kunden.</p>
+        <div className="mt-4">
+          <CustomerRateOverridesForm
+            customerId={customer.id}
+            zones={zones}
+            rateOverrides={(customer.rate_overrides as CustomerRateOverrides) ?? {}}
+          />
+        </div>
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
