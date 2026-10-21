@@ -21,6 +21,7 @@ export async function notifyDriverOfNewShipment(params: {
   receiverCity: string;
   reference?: string | null;
   requestedDelivery?: string | null;
+  notes?: string | null;
 }): Promise<void> {
   await sendAdminNotification({
     to: companyInfo.driverEmail,
@@ -36,6 +37,7 @@ export async function notifyDriverOfNewShipment(params: {
       `${params.receiverAddr}, ${params.receiverZip} ${params.receiverCity}`,
       ...(params.requestedDelivery ? [`Ønsket levering: ${params.requestedDelivery}`] : []),
       ...(params.reference ? [`Referanse: ${params.reference}`] : []),
+      ...(params.notes ? [`Leveringsinstruks: ${params.notes}`] : []),
       "",
       `Se i sjåfør-appen: ${companyInfo.url}/sjafor/${params.shipmentId}`,
     ].join("\n"),

@@ -299,6 +299,15 @@ export function ShipmentBookingForm() {
               <label className={labelClass}>Referanse</label>
               <input name="reference" className={inputClass} />
             </div>
+            <div className="sm:col-span-2">
+              <label className={labelClass}>Leveringsinstruks (valgfritt)</label>
+              <textarea
+                name="notes"
+                rows={2}
+                placeholder="f.eks. ring på dørklokke, kode 1234, lever hos nabo"
+                className={inputClass}
+              />
+            </div>
           </div>
 
           {serviceKey !== "PAKKE" && (

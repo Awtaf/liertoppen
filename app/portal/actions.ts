@@ -154,6 +154,7 @@ export async function createCustomerShipment(_prevState: string | null, formData
   const carry = formData.get("carry") === "on";
   const reference = String(formData.get("reference") ?? "").trim();
   const requestedDelivery = String(formData.get("requestedDelivery") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim();
 
   if (!serviceKey || !receiverName || !receiverAddr || !receiverZip || !receiverCity) {
     return "Fyll ut alle påkrevde felter.";
@@ -222,6 +223,7 @@ export async function createCustomerShipment(_prevState: string | null, formData
       price_inc_mva: price.totalIncMva,
       status: "BOOKET",
       reference: reference || null,
+      notes: notes || null,
     })
     .select("id")
     .single();
@@ -263,6 +265,7 @@ export async function createCustomerShipment(_prevState: string | null, formData
     receiverCity,
     reference,
     requestedDelivery,
+    notes,
   });
 
   revalidatePath("/portal");

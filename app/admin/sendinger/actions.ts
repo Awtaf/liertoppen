@@ -50,6 +50,7 @@ export async function createShipment(_prevState: string | null, formData: FormDa
   const carry = formData.get("carry") === "on";
   const reference = String(formData.get("reference") ?? "").trim();
   const requestedDelivery = String(formData.get("requestedDelivery") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim();
 
   if (!serviceKey || !receiverName || !receiverAddr || !receiverZip || !receiverCity || !senderName) {
     return "Fyll ut alle påkrevde felter.";
@@ -124,6 +125,7 @@ export async function createShipment(_prevState: string | null, formData: FormDa
       price_inc_mva: price.totalIncMva,
       status: "BOOKET",
       reference: reference || null,
+      notes: notes || null,
     })
     .select("id")
     .single();
@@ -149,6 +151,7 @@ export async function createShipment(_prevState: string | null, formData: FormDa
     receiverCity,
     reference,
     requestedDelivery,
+    notes,
   });
 
   revalidatePath("/admin/sendinger");

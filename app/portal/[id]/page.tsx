@@ -141,6 +141,12 @@ export default async function PortalShipmentPage({
                 <dd className="font-medium text-navy">{shipment.requested_delivery}</dd>
               </div>
             )}
+            {shipment.notes && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate">Leveringsinstruks</dt>
+                <dd className="font-medium text-navy">{shipment.notes}</dd>
+              </div>
+            )}
           </dl>
         </div>
 

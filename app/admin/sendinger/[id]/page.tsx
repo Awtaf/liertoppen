@@ -175,6 +175,12 @@ export default async function ShipmentDetailPage({
                 <dd className="font-medium text-navy">{shipment.reference}</dd>
               </div>
             )}
+            {shipment.notes && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-slate">Leveringsinstruks</dt>
+                <dd className="font-medium text-navy">{shipment.notes}</dd>
+              </div>
+            )}
           </dl>
         </div>
 
