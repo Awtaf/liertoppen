@@ -6,7 +6,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { validateInviteToken } from "@/lib/customers/invite";
 import { priceShipment, validateCargoAgainstLimit, type ServiceKey, type CustomerRateOverrides } from "@/lib/shipments/pricing";
-import { generateTrackingNumber } from "@/lib/shipments/tracking";
+import { generateTrackingNumber, formatTrackingNumber } from "@/lib/shipments/tracking";
+import { SERVICE_LABELS } from "@/lib/shipments/shipment";
+import { sendAdminNotification } from "@/lib/mailer";
+import { companyInfo } from "@/config/company";
 
 export async function portalLogin(_prevState: string | null, formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
@@ -218,6 +221,22 @@ export async function createCustomerShipment(_prevState: string | null, formData
   }
 
   await admin.from("shipment_events").insert({ shipment_id: shipment.id, status: "BOOKET" });
+
+  // Varsler ikke kunden om noe gikk galt her — sendAdminNotification feiler
+  // trygt internt (se lib/mailer.ts), så en e-postfeil skal aldri hindre
+  // bookingen i å fullføre.
+  await sendAdminNotification({
+    subject: `Ny sending booket av ${customer.name}`,
+    text: [
+      `Kunde: ${customer.name} (${customer.email})`,
+      `Sporingsnr: ${formatTrackingNumber(trackingNumber)}`,
+      `Tjeneste: ${SERVICE_LABELS[serviceKey]}`,
+      `Til: ${receiverName}, ${receiverZip} ${receiverCity}`,
+      `Pris: ${price.totalIncMva.toLocaleString("nb-NO")} kr inkl. mva`,
+      "",
+      `Se sendingen: ${companyInfo.url}/admin/sendinger/${shipment.id}`,
+    ].join("\n"),
+  });
 
   revalidatePath("/portal");
   redirect(`/portal/${shipment.id}`);
