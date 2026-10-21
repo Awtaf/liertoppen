@@ -164,13 +164,17 @@ export async function createCustomerShipment(_prevState: string | null, formData
     price = await priceShipment({
       serviceKey,
       postnr: receiverZip,
-      goods: { pallets, hours },
+      goods: { pallets, hours, weightKg },
       surcharges: { expressGuarantee, eveningWeekend, night, carry },
       rateOverrides: customer.rate_overrides,
     });
   } catch (error) {
     console.error("Kunne ikke beregne pris:", error);
     return "Kunne ikke beregne pris.";
+  }
+
+  if (price.coverageError) {
+    return price.coverageError;
   }
 
   if (serviceKey === "EXPRESS" && !price.zone) {

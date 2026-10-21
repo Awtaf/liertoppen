@@ -54,6 +54,7 @@ export async function POST(request: Request) {
         pallets: body.pallets,
         hours: body.hours,
         extraKmOutsideZone: body.extraKmOutsideZone,
+        weightKg: body.weightKg,
       },
       surcharges: {
         expressGuarantee: body.expressGuarantee,

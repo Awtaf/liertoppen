@@ -68,13 +68,17 @@ export async function createShipment(_prevState: string | null, formData: FormDa
     price = await priceShipment({
       serviceKey,
       postnr: receiverZip,
-      goods: { pallets, hours, extraKmOutsideZone },
+      goods: { pallets, hours, extraKmOutsideZone, weightKg },
       surcharges: { expressGuarantee, eveningWeekend, night, carry },
       rateOverrides: context?.rateOverrides,
     });
   } catch (error) {
     console.error("Kunne ikke beregne pris:", error);
     return "Kunne ikke beregne pris.";
+  }
+
+  if (price.coverageError) {
+    return price.coverageError;
   }
 
   const admin = createSupabaseAdminClient();

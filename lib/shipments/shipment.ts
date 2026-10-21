@@ -117,6 +117,7 @@ export type PublicShipmentStatus = {
 };
 
 export const SERVICE_LABELS: Record<ServiceKey, string> = {
+  PAKKE: "Pakkelevering",
   EXPRESS: "Bud / ekspress",
   SAMEDAY_ROUTE: "Fast distribusjon",
   PALLET: "Pallegods",

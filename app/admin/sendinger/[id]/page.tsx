@@ -90,6 +90,15 @@ export default async function ShipmentDetailPage({
             <Printer aria-hidden className="h-4 w-4" />
             Skriv ut fraktlapp
           </a>
+          <a
+            href={`/api/sendinger/${shipment.id}/label?format=a4`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border-light bg-white px-4 py-2.5 text-sm font-semibold text-navy hover:border-green hover:text-green"
+          >
+            <Printer aria-hidden className="h-4 w-4" />
+            Skriv ut (A4)
+          </a>
           <ShipmentStatusSelect shipmentId={shipment.id} status={shipment.status} />
         </div>
       </div>

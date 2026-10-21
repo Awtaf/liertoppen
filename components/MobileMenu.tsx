@@ -100,6 +100,13 @@ export function MobileMenu({ solid }: { solid: boolean }) {
             >
               Bli samarbeidspartner
             </Button>
+            <Link
+              href="/portal/login"
+              onClick={() => setOpen(false)}
+              className="mt-4 block text-center text-sm font-semibold text-white/70 hover:text-green"
+            >
+              Logg inn som kunde
+            </Link>
           </div>
         </div>
       )}

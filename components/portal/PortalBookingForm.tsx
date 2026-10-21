@@ -9,6 +9,7 @@ const inputClass =
 const labelClass = "mb-1.5 block text-xs font-semibold text-navy";
 
 const SERVICE_OPTIONS: { key: ServiceKey; label: string }[] = [
+  { key: "PAKKE", label: "Pakkelevering (fast pris per adresse)" },
   { key: "EXPRESS", label: "Bud / ekspress (direktekjøring A→B)" },
   { key: "SAMEDAY_ROUTE", label: "Fast distribusjon (samlast på rute)" },
   { key: "PALLET", label: "Pallegods (EUR-pall)" },
@@ -262,34 +263,36 @@ export function PortalBookingForm() {
             </div>
           </div>
 
-          <div className="mt-4 space-y-2 border-t border-border-light pt-4">
-            <label className="flex items-center gap-2 text-sm text-navy">
-              <input
-                type="checkbox"
-                name="expressGuarantee"
-                checked={expressGuarantee}
-                onChange={(e) => setExpressGuarantee(e.target.checked)}
-              />
-              Garantert innen 1–2 timer (+50 %)
-            </label>
-            <label className="flex items-center gap-2 text-sm text-navy">
-              <input
-                type="checkbox"
-                name="eveningWeekend"
-                checked={eveningWeekend}
-                onChange={(e) => setEveningWeekend(e.target.checked)}
-              />
-              Kveld (16–22) eller helg (+40 %)
-            </label>
-            <label className="flex items-center gap-2 text-sm text-navy">
-              <input type="checkbox" name="night" checked={night} onChange={(e) => setNight(e.target.checked)} />
-              Natt (+60 %)
-            </label>
-            <label className="flex items-center gap-2 text-sm text-navy">
-              <input type="checkbox" name="carry" checked={carry} onChange={(e) => setCarry(e.target.checked)} />
-              Bæring / etasjer / to mann
-            </label>
-          </div>
+          {serviceKey !== "PAKKE" && (
+            <div className="mt-4 space-y-2 border-t border-border-light pt-4">
+              <label className="flex items-center gap-2 text-sm text-navy">
+                <input
+                  type="checkbox"
+                  name="expressGuarantee"
+                  checked={expressGuarantee}
+                  onChange={(e) => setExpressGuarantee(e.target.checked)}
+                />
+                Garantert innen 1–2 timer (+50 %)
+              </label>
+              <label className="flex items-center gap-2 text-sm text-navy">
+                <input
+                  type="checkbox"
+                  name="eveningWeekend"
+                  checked={eveningWeekend}
+                  onChange={(e) => setEveningWeekend(e.target.checked)}
+                />
+                Kveld (16–22) eller helg (+40 %)
+              </label>
+              <label className="flex items-center gap-2 text-sm text-navy">
+                <input type="checkbox" name="night" checked={night} onChange={(e) => setNight(e.target.checked)} />
+                Natt (+60 %)
+              </label>
+              <label className="flex items-center gap-2 text-sm text-navy">
+                <input type="checkbox" name="carry" checked={carry} onChange={(e) => setCarry(e.target.checked)} />
+                Bæring / etasjer / to mann
+              </label>
+            </div>
+          )}
         </fieldset>
       </div>
 
@@ -323,9 +326,17 @@ export function PortalBookingForm() {
             </p>
           )}
 
-          {price && !outsideZoneExpress && (
+          {price && price.coverageError && (
+            <p className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {price.coverageError}
+            </p>
+          )}
+
+          {price && !outsideZoneExpress && !price.coverageError && (
             <>
-              <p className="mt-2 text-sm font-medium text-navy">{price.zone ? price.zone.name : "Utenfor definerte soner"}</p>
+              {serviceKey !== "PAKKE" && (
+                <p className="mt-2 text-sm font-medium text-navy">{price.zone ? price.zone.name : "Utenfor definerte soner"}</p>
+              )}
               <div className="mt-4 space-y-1.5 rounded-xl border border-border-light bg-bg-light p-4 text-sm">
                 {price.lines.map((line, i) => (
                   <div key={i} className="flex justify-between gap-4">
@@ -349,7 +360,7 @@ export function PortalBookingForm() {
 
           <button
             type="submit"
-            disabled={isPending || !price || outsideZoneExpress || Boolean(cargoError)}
+            disabled={isPending || !price || outsideZoneExpress || Boolean(cargoError) || Boolean(price?.coverageError)}
             className="mt-6 w-full rounded-lg bg-green px-5 py-3 text-sm font-semibold text-navy hover:bg-green/90 disabled:opacity-60"
           >
             {isPending ? "Booker…" : "Bekreft booking"}
