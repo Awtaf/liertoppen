@@ -75,6 +75,15 @@ export type CustomerRateOverrides = {
     widthCm?: number;
     heightCm?: number;
   };
+  /** Kunden henter alltid fra samme adresse — kunden skal ikke måtte skrive
+   * den inn selv ved hver booking. Overstyrer alltid det som evt. ligger i
+   * innsendt skjemadata (se app/portal/actions.ts). */
+  fixedSenderAddress?: {
+    addr: string;
+    zip: string;
+    city: string;
+    tel?: string;
+  };
 };
 
 export async function fetchCustomerRateOverrides(customerId: string): Promise<CustomerRateOverrides> {
@@ -209,12 +218,13 @@ export async function priceShipment(input: {
 
   // Pakkelevering har sitt eget, enkle dekningsområde (se PAKKE_ZONES) —
   // helt uavhengig av den generelle zones-tabellen som styrer ekspress/fast
-  // distribusjon/pallegods. Utenfor det området finnes det ingen gyldig
-  // pris, så vi returnerer tidlig med en tydelig feil i stedet for å late
-  // som vi har beregnet noe.
+  // distribusjon/pallegods. Utenfor de to definerte sonene er sendingen
+  // fortsatt mulig å booke — da brukes et "utenfor sone"-tillegg i stedet
+  // for å avvise bookingen. Kun et postnummer som ikke engang er gyldig
+  // (ikke 4 siffer) blokkeres, siden det ikke finnes noen adresse å prise.
   if (input.serviceKey === "PAKKE") {
-    const pakkeZone = resolvePakkeZone(input.postnr);
-    if (!pakkeZone) {
+    const trimmedPostnr = input.postnr.trim();
+    if (!/^\d{4}$/.test(trimmedPostnr)) {
       return {
         zone: null,
         lines: [],
@@ -222,18 +232,23 @@ export async function priceShipment(input: {
         mvaRate: MVA_RATE,
         mva: 0,
         totalIncMva: 0,
-        coverageError: "Denne adressen dekkes ikke av Pakkelevering ennå. Ta kontakt med oss for et tilbud.",
+        coverageError: "Postnummeret ser ikke riktig ut. Sjekk at det er fylt ut korrekt.",
       };
     }
 
-    const basePrice = cfg[pakkeZone.configKey] ?? 0;
+    const pakkeZone = resolvePakkeZone(trimmedPostnr);
     const included = cfg.includedWeightKg ?? 15;
     const tierKg = cfg.extraWeightTierKg ?? 15;
     const tierPrice = cfg.extraWeightTierPrice ?? 0;
     const weightKg = Math.max(0, input.goods?.weightKg ?? 0);
 
+    const basePrice = pakkeZone
+      ? (cfg[pakkeZone.configKey] ?? 0)
+      : (cfg.kloftaJessheimNeskollenBasePrice ?? 0) + (cfg.outsideZoneExtraCharge ?? 0);
+    const zoneName = pakkeZone ? pakkeZone.name : "utenfor Oslo/Lillestrøm/Kløfta/Jessheim/Neskollen";
+
     const lines: PriceLine[] = [
-      { label: `Grunnpris, ${pakkeZone.name} (inkl. ${included} kg)`, amountExMva: basePrice },
+      { label: `Grunnpris, ${zoneName} (inkl. ${included} kg)`, amountExMva: basePrice },
     ];
     let subtotal = basePrice;
 
