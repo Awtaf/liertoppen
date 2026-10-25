@@ -65,6 +65,7 @@ export type ShipmentParty = {
   zip: string;
   city: string;
   tel?: string;
+  email?: string;
 };
 
 export type ShipmentGoodsSnapshot = {

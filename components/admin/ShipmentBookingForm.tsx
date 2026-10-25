@@ -179,9 +179,13 @@ export function ShipmentBookingForm() {
               <label className={labelClass}>Sted</label>
               <input name="receiverCity" required className={inputClass} />
             </div>
-            <div className="sm:col-span-2">
+            <div>
               <label className={labelClass}>Telefon</label>
               <input name="receiverTel" className={inputClass} />
+            </div>
+            <div>
+              <label className={labelClass}>E-post (valgfritt, for varsler)</label>
+              <input name="receiverEmail" type="email" className={inputClass} />
             </div>
           </div>
         </fieldset>

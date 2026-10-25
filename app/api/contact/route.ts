@@ -6,7 +6,7 @@ import {
   buildContactMessageLines,
   type ContactFormData,
 } from "@/lib/contact";
-import { sendAdminNotification } from "@/lib/mailer";
+import { sendEmail } from "@/lib/mailer";
 
 /**
  * Server-side email delivery via SMTP (works with the company's existing
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     message: data.message,
   });
 
-  const sent = await sendAdminNotification({
+  const sent = await sendEmail({
     subject: buildContactSubject(data),
     text: buildContactMessageLines(data).join("\n"),
     replyTo: data.email,

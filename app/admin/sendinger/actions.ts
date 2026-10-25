@@ -8,7 +8,8 @@ import { priceShipment, validateCargoAgainstLimit, type ServiceKey } from "@/lib
 import { generateTrackingNumber } from "@/lib/shipments/tracking";
 import { resolveCustomerContext } from "@/lib/customers/context";
 import { notifyDriverOfNewShipment } from "@/lib/shipments/notify";
-import type { ShipmentStatus } from "@/lib/shipments/shipment";
+import { notifyReceiverBooked, notifyReceiverStatusChange } from "@/lib/shipments/receiver-notify";
+import type { Shipment, ShipmentStatus } from "@/lib/shipments/shipment";
 
 async function requireUser() {
   const supabase = await createSupabaseServerClient();
@@ -30,6 +31,7 @@ export async function createShipment(_prevState: string | null, formData: FormDa
   const receiverZip = String(formData.get("receiverZip") ?? "").trim();
   const receiverCity = String(formData.get("receiverCity") ?? "").trim();
   const receiverTel = String(formData.get("receiverTel") ?? "").trim();
+  const receiverEmail = String(formData.get("receiverEmail") ?? "").trim();
   const senderName = String(formData.get("senderName") ?? "").trim();
   const senderAddr = String(formData.get("senderAddr") ?? "").trim();
   const senderZip = String(formData.get("senderZip") ?? "").trim();
@@ -107,7 +109,14 @@ export async function createShipment(_prevState: string | null, formData: FormDa
       tracking_number: trackingNumber,
       customer_id: customerId,
       sender: { name: senderName, addr: senderAddr, zip: senderZip, city: senderCity, tel: senderTel },
-      receiver: { name: receiverName, addr: receiverAddr, zip: receiverZip, city: receiverCity, tel: receiverTel },
+      receiver: {
+        name: receiverName,
+        addr: receiverAddr,
+        zip: receiverZip,
+        city: receiverCity,
+        tel: receiverTel,
+        email: receiverEmail || undefined,
+      },
       goods: {
         colli,
         weightKg,
@@ -154,6 +163,10 @@ export async function createShipment(_prevState: string | null, formData: FormDa
     notes,
   });
 
+  if (receiverEmail) {
+    await notifyReceiverBooked({ receiverEmail, senderName, trackingNumber });
+  }
+
   revalidatePath("/admin/sendinger");
   redirect(`/admin/sendinger/${shipment.id}`);
 }
@@ -167,6 +180,21 @@ export async function updateShipmentStatus(shipmentId: string, status: ShipmentS
     throw new Error("Kunne ikke oppdatere status.");
   }
   await admin.from("shipment_events").insert({ shipment_id: shipmentId, status });
+
+  const { data: shipment } = await admin
+    .from("shipments")
+    .select("tracking_number, sender, receiver")
+    .eq("id", shipmentId)
+    .maybeSingle()
+    .returns<Pick<Shipment, "tracking_number" | "sender" | "receiver">>();
+  if (shipment?.receiver.email) {
+    await notifyReceiverStatusChange({
+      receiverEmail: shipment.receiver.email,
+      senderName: shipment.sender.name,
+      trackingNumber: shipment.tracking_number,
+      status,
+    });
+  }
 
   revalidatePath(`/admin/sendinger/${shipmentId}`);
   revalidatePath("/admin/sendinger");
