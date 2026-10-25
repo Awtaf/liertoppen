@@ -1,4 +1,4 @@
-import { sendAdminNotification } from "@/lib/mailer";
+import { sendEmail } from "@/lib/mailer";
 import { companyInfo } from "@/config/company";
 import { SERVICE_LABELS } from "./shipment";
 import type { ServiceKey } from "./pricing";
@@ -6,7 +6,7 @@ import { formatTrackingNumber } from "./tracking";
 
 /** Varsler sjåføren (companyInfo.driverEmail) om en ny sending på ruten —
  * uavhengig av om den ble booket av admin eller av en kunde i portalen.
- * Feiler aldri bookingen: sendAdminNotification svelger egne feil. */
+ * Feiler aldri bookingen: sendEmail svelger egne feil. */
 export async function notifyDriverOfNewShipment(params: {
   shipmentId: string;
   trackingNumber: string;
@@ -23,7 +23,7 @@ export async function notifyDriverOfNewShipment(params: {
   requestedDelivery?: string | null;
   notes?: string | null;
 }): Promise<void> {
-  await sendAdminNotification({
+  await sendEmail({
     to: companyInfo.driverEmail,
     subject: `Ny sending på ruten — ${params.receiverCity}`,
     text: [

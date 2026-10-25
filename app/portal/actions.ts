@@ -8,8 +8,9 @@ import { validateInviteToken } from "@/lib/customers/invite";
 import { priceShipment, validateCargoAgainstLimit, type ServiceKey, type CustomerRateOverrides } from "@/lib/shipments/pricing";
 import { generateTrackingNumber, formatTrackingNumber } from "@/lib/shipments/tracking";
 import { SERVICE_LABELS } from "@/lib/shipments/shipment";
-import { sendAdminNotification } from "@/lib/mailer";
+import { sendEmail } from "@/lib/mailer";
 import { notifyDriverOfNewShipment } from "@/lib/shipments/notify";
+import { notifyReceiverBooked } from "@/lib/shipments/receiver-notify";
 import { companyInfo } from "@/config/company";
 
 export async function portalLogin(_prevState: string | null, formData: FormData) {
@@ -134,6 +135,7 @@ export async function createCustomerShipment(_prevState: string | null, formData
   const receiverZip = String(formData.get("receiverZip") ?? "").trim();
   const receiverCity = String(formData.get("receiverCity") ?? "").trim();
   const receiverTel = String(formData.get("receiverTel") ?? "").trim();
+  const receiverEmail = String(formData.get("receiverEmail") ?? "").trim();
   // Kunder med en fast henteadresse (customer.rate_overrides.fixedSenderAddress)
   // skal aldri kunne overstyre den via skjemadata — serveren bruker alltid
   // den lagrede adressen i stedet for det som evt. ble sendt inn.
@@ -205,7 +207,14 @@ export async function createCustomerShipment(_prevState: string | null, formData
         city: senderCity,
         tel: fixedSender?.tel ?? customer.phone ?? "",
       },
-      receiver: { name: receiverName, addr: receiverAddr, zip: receiverZip, city: receiverCity, tel: receiverTel },
+      receiver: {
+        name: receiverName,
+        addr: receiverAddr,
+        zip: receiverZip,
+        city: receiverCity,
+        tel: receiverTel,
+        email: receiverEmail || undefined,
+      },
       goods: {
         colli,
         weightKg,
@@ -235,10 +244,10 @@ export async function createCustomerShipment(_prevState: string | null, formData
 
   await admin.from("shipment_events").insert({ shipment_id: shipment.id, status: "BOOKET" });
 
-  // Varsler ikke kunden om noe gikk galt her — sendAdminNotification feiler
+  // Varsler ikke kunden om noe gikk galt her — sendEmail feiler
   // trygt internt (se lib/mailer.ts), så en e-postfeil skal aldri hindre
   // bookingen i å fullføre.
-  await sendAdminNotification({
+  await sendEmail({
     subject: `Ny sending booket av ${customer.name}`,
     text: [
       `Kunde: ${customer.name} (${customer.email})`,
@@ -267,6 +276,10 @@ export async function createCustomerShipment(_prevState: string | null, formData
     requestedDelivery,
     notes,
   });
+
+  if (receiverEmail) {
+    await notifyReceiverBooked({ receiverEmail, senderName: customer.name, trackingNumber });
+  }
 
   revalidatePath("/portal");
   redirect(`/portal/${shipment.id}`);

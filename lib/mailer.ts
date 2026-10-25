@@ -24,11 +24,13 @@ export function getTransporter() {
   });
 }
 
-export async function sendAdminNotification(options: {
+/** Generisk transaksjonell e-post — brukt både for interne varsler (eier,
+ * sjåfør) og kundevendte e-poster (mottaker-varsler om sendingsstatus). */
+export async function sendEmail(options: {
   subject: string;
   text: string;
   replyTo?: string;
-  /** Mottaker — standard er companyInfo.email, men f.eks. sjåfør-varsler går til companyInfo.driverEmail. */
+  /** Mottaker — standard er companyInfo.email (interne varsler). Må alltid settes eksplisitt for kundevendte e-poster. */
   to?: string;
 }): Promise<boolean> {
   const transporter = getTransporter();

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
-import { sendAdminNotification } from "@/lib/mailer";
+import { sendEmail } from "@/lib/mailer";
 import {
   validateQuoteForm,
   hasErrors,
@@ -141,7 +141,7 @@ export async function POST(request: Request) {
     `Pris til kunde: ${quote.price.pris} kr`,
   ];
 
-  await sendAdminNotification({
+  await sendEmail({
     subject: `Ny tilbudsforespørsel fra ${data.customerName}`,
     text: summaryLines.join("\n"),
     replyTo: email,
