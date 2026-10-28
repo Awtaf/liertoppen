@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { companyInfo } from "@/config/company";
 import type { LeadStatus } from "@/lib/leads";
 
 export async function login(_prevState: string | null, formData: FormData) {
@@ -28,6 +29,52 @@ export async function login(_prevState: string | null, formData: FormData) {
   }
 
   redirect(redirectTo);
+}
+
+/** Sender en tilbakestillingslenke hvis e-posten finnes — svarer alltid
+ * likt uansett, så vi ikke lekker hvilke e-poster som har konto. */
+export async function requestPasswordReset(_prevState: string | null, formData: FormData) {
+  const email = String(formData.get("email") ?? "").trim();
+  if (!email) {
+    return "Fyll ut e-post.";
+  }
+
+  const supabase = await createSupabaseServerClient();
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${companyInfo.url}/admin/tilbakestill-passord`,
+  });
+
+  return "Hvis denne e-posten finnes hos oss, har vi sendt en lenke for å tilbakestille passordet. Sjekk også søppelpost.";
+}
+
+/** Krever en aktiv gjenopprettingsøkt — se app/admin/tilbakestill-passord/page.tsx,
+ * som bytter koden fra lenken i e-posten mot en slik økt før dette skjemaet vises. */
+export async function updatePassword(_prevState: string | null, formData: FormData) {
+  const password = String(formData.get("password") ?? "");
+  const confirmPassword = String(formData.get("confirmPassword") ?? "");
+
+  if (password.length < 8) {
+    return "Passordet må være minst 8 tegn.";
+  }
+  if (password !== confirmPassword) {
+    return "Passordene er ikke like.";
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return "Økten har utløpt. Be om en ny tilbakestillingslenke.";
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    console.error("Kunne ikke oppdatere passord:", error);
+    return "Kunne ikke oppdatere passord. Prøv igjen.";
+  }
+
+  redirect("/admin/leads");
 }
 
 export async function logout() {

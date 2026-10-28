@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { login } from "@/app/admin/actions";
@@ -32,9 +33,14 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
       </div>
 
       <div>
-        <label htmlFor="password" className={labelClasses}>
-          Passord
-        </label>
+        <div className="flex items-center justify-between">
+          <label htmlFor="password" className={labelClasses}>
+            Passord
+          </label>
+          <Link href="/admin/glemt-passord" className="text-xs font-semibold text-slate hover:text-navy">
+            Glemt passord?
+          </Link>
+        </div>
         <input
           id="password"
           name="password"
